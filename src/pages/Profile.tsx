@@ -1,14 +1,26 @@
 import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import Breadcrumb from "../components/Breadcrumbs/Breadcrumb";
 import CoverOne from "../images/cover/cover-01.png";
-import userSix from "../images/user/user-06.png";
-// import { Link } from "react-router-dom";
+import "../App.css";
 
 const Profile = () => {
-  const { user, isLoading } = useAuth0();
+  const { user, isLoading, isAuthenticated } = useAuth0();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/');
+    }
+  }, [isLoading, isAuthenticated, navigate]);
 
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (
@@ -36,10 +48,10 @@ const Profile = () => {
           <div className="relative z-30 mx-auto -mt-22 h-30 w-full max-w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:max-w-44 sm:-mt-24">
             <div className="relative drop-shadow-2">
               <img
-                src={user?.picture || userSix}
-                alt="profile"
-                className="rounded-full"
-              />
+               src={user.picture}
+               alt="profile"
+               className="rounded-full-profile-img"
+             />
               <label
                 htmlFor="profile"
                 className="absolute bottom-0 right-0 flex h-8.5 w-8.5 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-opacity-90 sm:bottom-2 sm:right-2"
@@ -89,6 +101,45 @@ const Profile = () => {
         </div>
       </div>
     </>
+    // <div className="overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+    //   <div className="px-4 pb-6 text-center lg:pb-8 xl:pb-11.5">
+    //     <div className="relative z-30 mx-auto mt-4">
+    //       {
+    //         <img
+    //           src={user.picture}
+    //           alt="profile"
+    //           className="rounded-full-profile-img"
+    //         />
+
+    //         /* <img
+    //         src={user.picture}
+    //         alt="profile"
+    //         className="rounded-[100px] min-w-[48px] min-h-[72px] w-[72px !important] h-[72px !important] mx-auto object-cover"
+    //       /> */
+    //       }
+    //     </div>
+    //     <div className="mt-4">
+    //       <h3 className="mb-1.5 text-2xl font-semibold text-black dark:text-white">
+    //         {user.name}
+    //       </h3>
+    //       <p className="font-medium text-gray-500">{user.email}</p>
+    //       {user.email_verified && (
+    //         <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-success py-1.5 px-3 text-sm font-medium text-white">
+    //           <span className="w-2 h-2 rounded-full bg-white"></span>
+    //           Verified
+    //         </span>
+    //       )}
+    //     </div>
+    //     <div className="mt-6">
+    //       <Link
+    //         to="/"
+    //         className="inline-flex items-center justify-center bg-primary text-white px-6 py-2 rounded-lg hover:bg-opacity-90 transition-all"
+    //       >
+    //         Back to Dashboard
+    //       </Link>
+    //     </div>
+    //   </div>
+    // </div>
   );
 };
 

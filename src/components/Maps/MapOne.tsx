@@ -1,53 +1,31 @@
+import { useEffect, useRef } from 'react';
 import jsVectorMap from 'jsvectormap';
-import 'jsvectormap/dist/css/jsvectormap.css';
-import { useEffect } from 'react';
-import '../../js/us-aea-en';
+import 'jsvectormap/dist/jsvectormap.css';
+import '../../js/us-aea-en';// We'll create this file next
 
 const MapOne = () => {
+  const mapRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const mapOne = new jsVectorMap({
-      selector: '#mapOne',
-      map: 'us_aea_en',
-      zoomButtons: true,
+    if (mapRef.current) {
+      const map = new jsVectorMap({
+        selector: mapRef.current,
+        map: 'us_aea_en',
+        zoomOnScroll: true,
+        zoomButtons: true,
+      });
 
-      regionStyle: {
-        initial: {
-          fill: '#C8D0D8',
-        },
-        hover: {
-          fillOpacity: 1,
-          fill: '#3056D3',
-        },
-      },
-      regionLabelStyle: {
-        initial: {
-          fontFamily: 'Satoshi',
-          fontWeight: 'semibold',
-          fill: '#fff',
-        },
-        hover: {
-          cursor: 'pointer',
-        },
-      },
-
-      labels: {
-        regions: {
-          render(code: string) {
-            return code.split('-')[1];
-          },
-        },
-      },
-    });
-    mapOne;
-  });
+      return () => {
+        map.destroy();
+      };
+    }
+  }, []);
 
   return (
-    <div className="col-span-12 rounded-sm border border-stroke bg-white py-6 px-7.5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-7">
-      <h4 className="mb-2 text-xl font-semibold text-black dark:text-white">
-        Region labels
-      </h4>
-      <div id="mapOne" className="mapOne map-btn h-90"></div>
-    </div>
+    <div
+      ref={mapRef}
+      className="h-[400px] w-full"
+    ></div>
   );
 };
 

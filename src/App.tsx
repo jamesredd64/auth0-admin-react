@@ -1,168 +1,303 @@
-import { useEffect, useState } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
-import reactLogo from './assets/react.svg';
-import viteLogo from '/vite.svg';
-import './App.css';
+import { useEffect, useState } from "react";
+import { Route, Routes, useLocation, Navigate } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 
-interface UserMetadata {
-  roles?: string[];
-  permissions?: string[];
-  user_metadata?: Record<string, unknown>;
-  app_metadata?: Record<string, unknown>;
-  [key: string]: unknown;
-}
+import Loader from "./common/Loader";
+import PageTitle from "./components/PageTitle";
+import SignIn from "./pages/Authentication/SignIn";
+import SignUp from "./pages/Authentication/SignUp";
+import Calendar from "./pages/Calendar";
+import Chart from "./pages/Chart";
+import ECommerce from "./pages/Dashboard/ECommerce";
+import FormElements from "./pages/Form/FormElements";
+import FormLayout from "./pages/Form/FormLayout";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import Tables from "./pages/Tables";
+import Alerts from "./pages/UiElements/Alerts";
+import Buttons from "./pages/UiElements/Buttons";
+import DefaultLayout from "./layout/DefaultLayout";
 
-function App() {
-  const [count, setCount] = useState(0);
-  const [userMetadata, setUserMetadata] = useState<UserMetadata | null>(null);
-  const { 
-    isAuthenticated, 
-    loginWithRedirect, 
-    logout, 
-    user, 
-    isLoading, 
-    error,
-    getAccessTokenSilently 
-  } = useAuth0();
+// Protected Route wrapper component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
 
-  // Log all auth state changes
   useEffect(() => {
-    console.log('Auth0 State Changed:', {
-      isLoading,
-      isAuthenticated,
-      user,
-      error
-    });
-  }, [isLoading, isAuthenticated, user, error]);
-
-  // Fetch additional user metadata
-  useEffect(() => {
-    const getUserMetadata = async () => {
-      try {
-        console.log('Fetching user metadata...');
-        const accessToken = await getAccessTokenSilently({
-          authorizationParams: {
-            audience: `https://${import.meta.env.VITE_AUTH0_DOMAIN}/api/v2/`,
-            scope: 'read:current_user read:roles',
-          },
-        });
-        
-        console.log('Access Token received:', accessToken.substring(0, 20) + '...');
-
-        const userDetailsByIdUrl = `https://${import.meta.env.VITE_AUTH0_DOMAIN}/api/v2/users/${user?.sub}`;
-        console.log('Fetching from:', userDetailsByIdUrl);
-
-        const metadataResponse = await fetch(userDetailsByIdUrl, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        const metadata = await metadataResponse.json();
-        console.log('Full User Metadata Response:', metadata);
-        
-        // Log specific parts we're interested in
-        console.log('User Roles:', metadata.roles);
-        console.log('User Permissions:', metadata.permissions);
-        console.log('User Metadata:', metadata.user_metadata);
-        console.log('App Metadata:', metadata.app_metadata);
-        
-        setUserMetadata(metadata);
-
-      } catch (error: unknown) {
-        const e = error as Error;
-        console.error('Error fetching user metadata:', e);
-        console.error('Error details:', {
-          message: e.message,
-          stack: e.stack,
-          response: (e as { response?: unknown }).response // Type the potential response property safely
-        });
-      }
-    };
-
-    if (isAuthenticated && user?.sub) {
-      console.log('User authenticated, fetching metadata for sub:', user.sub);
-      getUserMetadata();
+    if (!isLoading && !isAuthenticated) {
+      loginWithRedirect();
     }
-  }, [getAccessTokenSilently, user?.sub, isAuthenticated]);
-
-  if (error) {
-    console.error('Auth0 Error:', error);
-    return <div>Auth0 Error: {error.message}</div>;
-  }
+  }, [isAuthenticated, isLoading, loginWithRedirect]);
 
   if (isLoading) {
-    console.log('Auth0 is still loading...');
-    return <div>Loading Auth0 configuration...</div>;
+    return <Loader />;
   }
 
-  return (
-    <div className="app-container">
-      <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
-        {isAuthenticated ? (
-          <div>
-            <h3>User Profile</h3>
-            <p>Name: {user?.name}</p>
-            <p>Email: {user?.email}</p>
-            
-            <h4>Raw User Object:</h4>
-            <pre style={{ fontSize: '12px', maxWidth: '300px', overflow: 'auto' }}>
-              {JSON.stringify(user, null, 2)}
-            </pre>
-            
-            <h4>Full Metadata:</h4>
-            <pre style={{ fontSize: '12px', maxWidth: '300px', overflow: 'auto' }}>
-              {JSON.stringify(userMetadata, null, 2)}
-            </pre>
-            
-            <button
-              onClick={() => {
-                console.log('Logging out...', {
-                  returnTo: window.location.origin,
-                  currentUser: user?.email
-                });
-                logout({ logoutParams: { returnTo: window.location.origin } });
-              }}
-              style={{ padding: '8px 16px', cursor: 'pointer' }}
-            >
-              Log Out
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => {
-              console.log('Initiating login...', {
-                returnTo: window.location.origin,
-                currentPath: window.location.pathname
-              });
-              loginWithRedirect();
-            }}
-            style={{ padding: '8px 16px', cursor: 'pointer' }}
-          >
-            Log In
-          </button>
-        )}
-      </div>
+  return isAuthenticated ? <>{children}</> : null;
+};
 
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-    </div>
+function App() {
+  const [loading, setLoading] = useState<boolean>(true);
+  const { pathname } = useLocation();
+  const { isAuthenticated } = useAuth0();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  useEffect(() => {
+    setTimeout(() => setLoading(false), 1000);
+  }, []);
+
+  return loading ? (
+    <Loader />
+  ) : (
+    <DefaultLayout>
+      <Routes>
+        <Route
+          index
+          element={
+            <>
+              <PageTitle title="eCommerce Dashboard | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <ECommerce />
+            </>
+          }
+        />
+
+        {/* Protected Routes */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <PageTitle title="Profile | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <PageTitle title="Settings | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Public Routes */}
+        <Route
+          path="/auth/signin"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/profile" replace />
+            ) : (
+              <>
+                <PageTitle title="Signin | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <SignIn />
+              </>
+            )
+          }
+        />
+
+        <Route
+          path="/auth/signup"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/profile" replace />
+            ) : (
+              <>
+                <PageTitle title="Signup | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+                <SignUp />
+              </>
+            )
+          }
+        />
+
+        {/* Other existing routes... */}
+        <Route
+          path="/calendar"
+          element={
+            <>
+              <PageTitle title="Calendar | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <Calendar />
+            </>
+          }
+        />
+        <Route
+          path="/forms/form-elements"
+          element={
+            <>
+              <PageTitle title="Form Elements | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <FormElements />
+            </>
+          }
+        />
+        <Route
+          path="/forms/form-layout"
+          element={
+            <>
+              <PageTitle title="Form Layout | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <FormLayout />
+            </>
+          }
+        />
+        <Route
+          path="/tables"
+          element={
+            <>
+              <PageTitle title="Tables | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <Tables />
+            </>
+          }
+        />
+        <Route
+          path="/chart"
+          element={
+            <>
+              <PageTitle title="Basic Chart | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <Chart />
+            </>
+          }
+        />
+        <Route
+          path="/ui/alerts"
+          element={
+            <>
+              <PageTitle title="Alerts | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <Alerts />
+            </>
+          }
+        />
+        <Route
+          path="/ui/buttons"
+          element={
+            <>
+              <PageTitle title="Buttons | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <Buttons />
+            </>
+          }
+        />
+        <Route
+          path="/auth/signin"
+          element={
+            <>
+              <PageTitle title="Signin | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <SignIn />
+            </>
+          }
+        />
+        <Route
+          path="/auth/signup"
+          element={
+            <>
+              <PageTitle title="Signup | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <SignUp />
+            </>
+          }
+        />
+      </Routes>
+    </DefaultLayout>
   );
 }
 
 export default App;
+
+// import { useEffect } from "react";
+// import { useAuth0 } from "@auth0/auth0-react";
+// import {
+//   Routes,
+//   Route,
+//   Link,
+//   useLocation,
+//   useNavigate,
+// } from "react-router-dom";
+// import { useAuth0UserMetadata } from "./hooks/useAuth0UserMetadata";
+// import LogoutButton from "./components/LogoutButton";
+// import Profile from "./pages/Profile";
+// import "./App.css";
+
+// function App() {
+//   const {
+//     isAuthenticated,
+//     loginWithRedirect,
+//     user,
+//     isLoading: authLoading,
+//     error: authError,
+//   } = useAuth0();
+//   const {
+//     userMetadata,
+//     isLoading: metadataLoading,
+//     error: metadataError,
+//   } = useAuth0UserMetadata();
+//   const location = useLocation();
+//   const navigate = useNavigate();
+
+//   useEffect(() => {
+//     if (!authLoading && !isAuthenticated && location.pathname !== "/") {
+//       navigate("/");
+//     }
+//   }, [authLoading, isAuthenticated, location, navigate]);
+
+//   if (authLoading || metadataLoading) {
+//     return <div>Loading...</div>;
+//   }
+
+//   if (authError || metadataError) {
+//     return <div>Error: {(authError || metadataError)?.message}</div>;
+//   }
+
+//   if (!isAuthenticated) {
+//     return <button onClick={() => loginWithRedirect()}>Log In</button>;
+//   }
+
+//   return (
+//     <div className="app-container p-4">
+//       <div className="flex justify-between items-center mb-6">
+//         <h1 className="text-2xl font-bold">
+//           <Link to="/" className="hover:text-primary">
+//             Dashboard
+//           </Link>
+//         </h1>
+//         <div className="flex gap-4">
+//           <Link
+//             to="/profile"
+//             className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all"
+//           >
+//             Profile
+//           </Link>
+//           <LogoutButton />
+//         </div>
+//       </div>
+
+//       <Routes>
+//         <Route path="/profile" element={<Profile />} />
+//         <Route
+//           path="/"
+//           element={
+//             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//               <div className="bg-boxdark p-6 rounded-lg shadow-md">
+//                 <h2 className="text-xl font-semibold mb-4 text-white">
+//                   User Profile
+//                 </h2>
+//                 <pre className="bg-black bg-opacity-50 p-4 rounded text-white overflow-auto">
+//                   {JSON.stringify(user, null, 2)}
+//                 </pre>
+//               </div>
+
+//               <div className="bg-boxdark p-6 rounded-lg shadow-md">
+//                 <h2 className="text-xl font-semibold mb-4 text-white">
+//                   User Metadata
+//                 </h2>
+//                 <pre className="bg-black bg-opacity-50 p-4 rounded text-white overflow-auto">
+//                   {JSON.stringify(userMetadata, null, 2)}
+//                 </pre>
+//               </div>
+//             </div>
+//           }
+//         />
+//       </Routes>
+//     </div>
+//   );
+// }
+
+// export default App;
