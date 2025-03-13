@@ -108,7 +108,7 @@ const Profile = () => {
     //         <img
     //           src={user.picture}
     //           alt="profile"
-    //           className="rounded-full-profile-img"
+    //           className="w-[120px] h-[120px] rounded-full object-cover mx-auto"
     //         />
 
     //         /* <img
