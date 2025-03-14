@@ -12,10 +12,10 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <>
+    <div className="min-h-screen w-full">
       <Header sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
+      <div className="flex min-h-[calc(100vh-64px)] w-full items-center justify-center">
+        <div className="text-center px-4">
           <h1 className="mb-4 text-4xl font-bold text-black dark:text-white">
             Welcome to Admin Dashboard
           </h1>
@@ -24,7 +24,7 @@ const HomePage: React.FC = () => {
           </p>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

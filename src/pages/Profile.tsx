@@ -1,12 +1,26 @@
 import { useAuth0 } from "@auth0/auth0-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import Breadcrumb from "../components/Breadcrumbs/Breadcrumb";
 import CoverOne from "../images/cover/cover-01.png";
 
+interface CustomClaims {
+  adBudget: number;
+  costPerAcquisition: number;
+  dailySpendingLimit: number;
+  marketingChannels: string;
+  monthlyBudget: number;
+  preferredPlatforms: string;
+  notificationPreferences: boolean;
+  roiTarget: number;
+  roles: string[];
+}
+
 const Profile = () => {
-  const { user, isLoading, isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const { user, isLoading, isAuthenticated, getIdTokenClaims } = useAuth0();
   const navigate = useNavigate();
+  const [claimsData, setClaimsData] = useState<CustomClaims | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -16,31 +30,40 @@ const Profile = () => {
   }, [isLoading, isAuthenticated, navigate]);
 
   useEffect(() => {
-    const getUserMetadata = async () => {
+    const fetchCustomClaims = async () => {
       try {
-        const accessToken = await getAccessTokenSilently();
-        console.log('Access token obtained:', accessToken.substring(0, 10) + '...');
+        const claims = await getIdTokenClaims();
+        const namespace = 'https://dev-uizu7j8qzflxzjpy.jr.com';
         
-        if (user?.sub) {
-          const userDetailUrl = `${import.meta.env.VITE_AUTH0_AUDIENCE}users/${user.sub}`;
-          const metadataResponse = await fetch(userDetailUrl, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          });
-          
-          const metadata = await metadataResponse.json();
-          console.log('User metadata:', metadata);
+        if (!claims) {
+          throw new Error('Failed to fetch claims');
         }
+
+        const customClaims = {
+          adBudget: claims[`${namespace}/adBudget`],
+          costPerAcquisition: claims[`${namespace}/costPerAcquisition`],
+          dailySpendingLimit: claims[`${namespace}/dailySpendingLimit`],
+          marketingChannels: claims[`${namespace}/marketingChannels`],
+          monthlyBudget: claims[`${namespace}/monthlyBudget`],
+          preferredPlatforms: claims[`${namespace}/preferredPlatforms`],
+          notificationPreferences: claims[`${namespace}/notificationPreferences`],
+          roiTarget: claims[`${namespace}/roiTarget`],
+          roles: claims[`${namespace}/roles`],
+        };
+
+        setClaimsData(customClaims);
+        setError(null);
       } catch (error) {
-        console.error('Error fetching user metadata:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        console.error('Error fetching custom claims:', errorMessage);
+        setError(errorMessage);
       }
     };
 
-    if (user?.sub) {
-      getUserMetadata();
+    if (isAuthenticated) {
+      fetchCustomClaims();
     }
-  }, [getAccessTokenSilently, user?.sub]);
+  }, [isAuthenticated, getIdTokenClaims]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -72,14 +95,25 @@ const Profile = () => {
               {user.name}
             </h3>
             <p className="font-medium">{user.email}</p>
-            <div className="mx-auto max-w-180">
-              <h4 className="font-semibold text-black dark:text-white">
-                About Me
-              </h4>
-              <p className="mt-4.5">
-                {user.nickname}
-              </p>
-            </div>
+
+            {error ? (
+              <p className="text-danger">{error}</p>
+            ) : claimsData && (
+              <div className="mx-auto max-w-180 mt-4">
+                <h4 className="font-semibold text-black dark:text-white">Custom Claims</h4>
+                <div className="mt-4 grid gap-2">
+                  <div><strong>Ad Budget:</strong> ${claimsData.adBudget?.toLocaleString()}</div>
+                  <div><strong>Cost Per Acquisition:</strong> ${claimsData.costPerAcquisition?.toLocaleString()}</div>
+                  <div><strong>Daily Spending Limit:</strong> ${claimsData.dailySpendingLimit?.toLocaleString()}</div>
+                  <div><strong>Marketing Channels:</strong> {claimsData.marketingChannels}</div>
+                  <div><strong>Monthly Budget:</strong> ${claimsData.monthlyBudget?.toLocaleString()}</div>
+                  <div><strong>Preferred Platforms:</strong> {claimsData.preferredPlatforms}</div>
+                  <div><strong>Notification Preferences:</strong> {claimsData.notificationPreferences ? 'Enabled' : 'Disabled'}</div>
+                  <div><strong>ROI Target:</strong> {(claimsData.roiTarget * 100).toFixed(1)}%</div>
+                  <div><strong>Roles:</strong> {Array.isArray(claimsData.roles) ? claimsData.roles.join(', ') : claimsData.roles}</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
