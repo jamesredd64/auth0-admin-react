@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth0 } from '@auth0/auth0-react';
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
+import React from "react";
 // import { Link } from "react-router-dom";
 
 export default function UserDropdown() {

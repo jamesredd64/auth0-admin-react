@@ -19,6 +19,7 @@ import Calendar from "./pages/Calendar";
 
 // import { ScrollToTop } from "./components/common/ScrollToTop";
 import NotFound from "./pages/OtherPage/NotFound";
+import React from "react";
 
 function App() {
   const { isLoading, isAuthenticated, error } = useAuth0();

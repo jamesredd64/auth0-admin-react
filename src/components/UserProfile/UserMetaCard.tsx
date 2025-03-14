@@ -18,7 +18,7 @@ const UserMetaCard = ({ metadata }: UserMetaCardProps) => {
               <img src={metadata.picture} alt={metadata.name} />
             </div>
             <div className="order-3 xl:order-2">
-              <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
+              <h4 className="mb-2 text-lg font-semibold text-center text-white-800 dark:text-white/90 xl:text-left">
                 {metadata.name}
               </h4>
               <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
