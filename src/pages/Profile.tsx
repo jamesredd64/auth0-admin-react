@@ -1,10 +1,12 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Breadcrumb from "../components/Breadcrumbs/Breadcrumb";
+import { useGlobalStorage } from "../hooks/useGlobalStorage";
+import Breadcrumb from "../components/common/PageBreadCrumb";
 import CoverOne from "../images/cover/cover-01.png";
+import { userService, UserProfile } from "../services/userService";
 
-interface CustomClaims {
+interface UserMetadata {
   adBudget: number;
   costPerAcquisition: number;
   dailySpendingLimit: number;
@@ -13,13 +15,18 @@ interface CustomClaims {
   preferredPlatforms: string;
   notificationPreferences: boolean;
   roiTarget: number;
+  name: string;
+  nickname: string;
   roles: string[];
+  email: string;
+  picture: string;
 }
 
 const Profile = () => {
-  const { user, isLoading, isAuthenticated, getIdTokenClaims } = useAuth0();
+  const { user, isLoading, isAuthenticated } = useAuth0();
   const navigate = useNavigate();
-  const [claimsData, setClaimsData] = useState<CustomClaims | null>(null);
+  const [userMetadata] = useGlobalStorage<UserMetadata | null>('userMetadata', null);
+  const [mongoUser, setMongoUser] = useGlobalStorage<UserProfile | null>('mongoUser', null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,52 +37,88 @@ const Profile = () => {
   }, [isLoading, isAuthenticated, navigate]);
 
   useEffect(() => {
-    const fetchCustomClaims = async () => {
+    const fetchMongoUser = async () => {
+      if (!user?.email) return;
+      
       try {
-        const claims = await getIdTokenClaims();
-        const namespace = 'https://dev-uizu7j8qzflxzjpy.jr.com';
-        
-        if (!claims) {
-          throw new Error('Failed to fetch claims');
+        const userData = await userService.getUserByEmail(user.email);
+        if (userData) {
+          setMongoUser({
+            email: userData.email,
+            firstName: userData.firstName || undefined,
+            lastName: userData.lastName || undefined,
+            phoneNumber: userData.phoneNumber || undefined,
+            profile: userData.profile ? {
+              profilePictureUrl: userData.profile.profilePictureUrl || undefined,
+              dateOfBirth: userData.profile.dateOfBirth ? new Date(userData.profile.dateOfBirth) : undefined,
+              gender: userData.profile.gender || undefined,
+              marketingBudget: userData.profile.marketingBudget ? {
+                amount: userData.profile.marketingBudget.amount || 0,
+                frequency: userData.profile.marketingBudget.frequency || 'monthly',
+                adCosts: userData.profile.marketingBudget.adCosts || 0
+              } : undefined
+            } : undefined,
+            address: userData.address ? {
+              street: userData.address.street || undefined,
+              city: userData.address.city || undefined,
+              state: userData.address.state || undefined,
+              zipCode: userData.address.zipCode || undefined,
+              country: userData.address.country || undefined
+            } : undefined
+          });
+        } else {
+          // Create new user in MongoDB if they don't exist
+          const newUser = await userService.createUser({
+            email: user.email,
+            firstName: user.given_name || undefined,
+            lastName: user.family_name || undefined,
+            profile: {
+              profilePictureUrl: user.picture || undefined
+            }
+          });
+          setMongoUser(newUser);
         }
-
-        const customClaims = {
-          adBudget: claims[`${namespace}/adBudget`],
-          costPerAcquisition: claims[`${namespace}/costPerAcquisition`],
-          dailySpendingLimit: claims[`${namespace}/dailySpendingLimit`],
-          marketingChannels: claims[`${namespace}/marketingChannels`],
-          monthlyBudget: claims[`${namespace}/monthlyBudget`],
-          preferredPlatforms: claims[`${namespace}/preferredPlatforms`],
-          notificationPreferences: claims[`${namespace}/notificationPreferences`],
-          roiTarget: claims[`${namespace}/roiTarget`],
-          roles: claims[`${namespace}/roles`],
-        };
-
-        setClaimsData(customClaims);
         setError(null);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        console.error('Error fetching custom claims:', errorMessage);
-        setError(errorMessage);
+        console.error('Error fetching MongoDB user:', error);
+        setError('Failed to load profile data. Please try again later.');
       }
     };
 
-    if (isAuthenticated) {
-      fetchCustomClaims();
+    if (user?.email) {
+      fetchMongoUser();
     }
-  }, [isAuthenticated, getIdTokenClaims]);
+  }, [user, setMongoUser]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      </div>
+    );
   }
 
-  if (!user) {
+  if (!user || !userMetadata) {
     return null;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        {error}
+        <button
+          onClick={() => window.location.reload()}
+          className="ml-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   return (
     <>
-      <Breadcrumb pageName="Profile" />
+      <Breadcrumb pageTitle="Profile" />
       <div className="overflow-hidden rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
         <div className="relative z-20 h-35 md:h-65">
           <img
@@ -87,36 +130,49 @@ const Profile = () => {
         <div className="px-4 pb-6 text-center lg:pb-8 xl:pb-11.5">
           <div className="relative z-30 mx-auto -mt-22 h-30 w-30 max-w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:w-44 sm:max-w-44 sm:p-3">
             <div className="relative drop-shadow-2">
-              <img src={user.picture} alt="profile" />
+              <img src={userMetadata.picture} alt="profile" />
             </div>
           </div>
           <div className="mt-4">
             <h3 className="mb-1.5 text-2xl font-semibold text-black dark:text-white">
-              {user.name}
+              {userMetadata.name}
             </h3>
-            <p className="font-medium">{user.email}</p>
+            <p className="font-medium">{userMetadata.email}</p>
+            <p className="font-medium">Roles: {userMetadata.roles.join(', ')}</p>
 
-            {error ? (
-              <p className="text-danger">{error}</p>
-            ) : claimsData && (
-              <div className="mx-auto max-w-180 mt-4">
-                <h4 className="font-semibold text-black dark:text-white">Custom Claims</h4>
-                <div className="mt-4 grid gap-2">
-                  <div><strong>Ad Budget:</strong> ${claimsData.adBudget?.toLocaleString()}</div>
-                  <div><strong>Cost Per Acquisition:</strong> ${claimsData.costPerAcquisition?.toLocaleString()}</div>
-                  <div><strong>Daily Spending Limit:</strong> ${claimsData.dailySpendingLimit?.toLocaleString()}</div>
-                  <div><strong>Marketing Channels:</strong> {claimsData.marketingChannels}</div>
-                  <div><strong>Monthly Budget:</strong> ${claimsData.monthlyBudget?.toLocaleString()}</div>
-                  <div><strong>Preferred Platforms:</strong> {claimsData.preferredPlatforms}</div>
-                  <div><strong>Notification Preferences:</strong> {claimsData.notificationPreferences ? 'Enabled' : 'Disabled'}</div>
-                  <div><strong>ROI Target:</strong> {(claimsData.roiTarget * 100).toFixed(1)}%</div>
-                  <div><strong>Roles:</strong> {Array.isArray(claimsData.roles) ? claimsData.roles.join(', ') : claimsData.roles}</div>
-                </div>
+            <div className="mx-auto max-w-180 mt-4">
+              <h4 className="font-semibold text-black dark:text-white">User Metadata</h4>
+              <div className="mt-4 grid gap-2">
+                <div><strong>Ad Budget:</strong> ${userMetadata.adBudget?.toLocaleString()}</div>
+                <div><strong>Cost Per Acquisition:</strong> ${userMetadata.costPerAcquisition?.toLocaleString()}</div>
+                <div><strong>Daily Spending Limit:</strong> ${userMetadata.dailySpendingLimit?.toLocaleString()}</div>
+                <div><strong>Marketing Channels:</strong> {userMetadata.marketingChannels}</div>
+                <div><strong>Monthly Budget:</strong> ${userMetadata.monthlyBudget?.toLocaleString()}</div>
+                <div><strong>Preferred Platforms:</strong> {userMetadata.preferredPlatforms}</div>
+                <div><strong>Notification Preferences:</strong> {userMetadata.notificationPreferences ? 'Enabled' : 'Disabled'}</div>
+                <div><strong>ROI Target:</strong> {(userMetadata.roiTarget * 100).toFixed(1)}%</div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
+      {mongoUser && (
+        <div className="mt-4">
+          <h4 className="font-semibold text-black dark:text-white">Additional Profile Information</h4>
+          <div className="mt-4 grid gap-2">
+            <div><strong>Phone:</strong> {mongoUser.phoneNumber}</div>
+            {mongoUser.address && (
+              <>
+                <div><strong>Street:</strong> {mongoUser.address.street}</div>
+                <div><strong>City:</strong> {mongoUser.address.city}</div>
+                <div><strong>State:</strong> {mongoUser.address.state}</div>
+                <div><strong>ZIP:</strong> {mongoUser.address.zipCode}</div>
+                <div><strong>Country:</strong> {mongoUser.address.country}</div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 };

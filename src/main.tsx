@@ -1,28 +1,27 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 import { BrowserRouter as Router } from 'react-router-dom';
 import AuthProvider from './auth/AuthProvider';
-// import { Auth0ProviderWithNavigate } from './auth/Auth0ProviderWithNavigate';
-import App from './App';
-import './index.css';
-import './css/style.css';
-import './css/satoshi.css';
-import 'jsvectormap/dist/jsvectormap.css';
-import 'flatpickr/dist/flatpickr.min.css';
+import "./index.css";
+import "swiper/swiper-bundle.css";
+import "simplebar-react/dist/simplebar.min.css";
+import "flatpickr/dist/flatpickr.css";
+import  App from "./App";
+import { AppWrapper } from "./components/common/PageMeta.tsx";
+import { ThemeProvider } from "./context/ThemeContext.tsx";
+// import { connectDB } from './services/mongodb';
 
-console.log("Main.tsx - Starting app initialization");
-console.log("Environment variables:", {
-  domain: import.meta.env.VITE_AUTH0_DOMAIN,
-  clientId: import.meta.env.VITE_AUTH0_CLIENT_ID?.substring(0, 8) + '...',
-  audience: import.meta.env.VITE_AUTH0_AUDIENCE
-});
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
     <Router>
       <AuthProvider>
-        <App />
+        <ThemeProvider>     
+          <AppWrapper>
+            <App />
+          </AppWrapper>
+        </ThemeProvider>
       </AuthProvider>
-    </Router>
-  </React.StrictMode>,
+    </Router>      
+  </StrictMode>
 );
