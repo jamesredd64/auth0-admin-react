@@ -1,12 +1,14 @@
 import React from "react";
-import { UserProfile } from "../../services/userService";
+// import { UserProfile } from "../../services/userService";
+import { UserMetadata } from "../../types/user.js";
 
 interface UserInfoCardProps {
-  user: UserProfile | null;
+  metadata: UserMetadata;
 }
 
-const UserInfoCard = ({ user }: UserInfoCardProps) => {
-  if (!user) return null;
+
+const UserInfoCard = ({ metadata }: UserInfoCardProps) => {
+  if (!metadata) return null;
 
   return (
     <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -19,32 +21,36 @@ const UserInfoCard = ({ user }: UserInfoCardProps) => {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div className="flex flex-col gap-2">
             <span className="font-medium text-black dark:text-white">First Name</span>
-            <span>{user.firstName}</span>
+            <span>{metadata.firstName}</span>
           </div>
           <div className="flex flex-col gap-2">
             <span className="font-medium text-black dark:text-white">Last Name</span>
-            <span>{user.lastName}</span>
+            <span>{metadata.lastName}</span>
           </div>
           <div className="flex flex-col gap-2">
             <span className="font-medium text-black dark:text-white">Email</span>
-            <span>{user.email}</span>
+            <span>{metadata.email}</span>
           </div>
           <div className="flex flex-col gap-2">
             <span className="font-medium text-black dark:text-white">Phone</span>
-            <span>{user.phoneNumber}</span>
+            <span>{metadata.phoneNumber}</span>
           </div>
-          {user.profile && (
-            <>
-              <div className="flex flex-col gap-2">
-                <span className="font-medium text-black dark:text-white">Date of Birth</span>
-                <span>{user.profile.dateOfBirth?.toLocaleDateString()}</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <span className="font-medium text-black dark:text-white">Gender</span>
-                <span>{user.profile.gender}</span>
-              </div>
-            </>
-          )}
+          <div className="flex flex-col gap-2">
+            <span className="font-medium text-black dark:text-white">Date of Birth</span>
+            <span>{metadata.dateOfBirth}</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-medium text-black dark:text-white">Gender</span>
+            <span>{metadata.gender}</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-medium text-black dark:text-white">Company</span>
+            <span>{metadata.company}</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-medium text-black dark:text-white">Position</span>
+            <span>{metadata.position}</span>
+          </div>
         </div>
       </div>
     </div>

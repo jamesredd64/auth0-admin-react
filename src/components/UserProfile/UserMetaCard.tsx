@@ -19,7 +19,7 @@ const UserMetaCard = ({ metadata }: UserMetaCardProps) => {
             </div>
             <div className="order-3 xl:order-2">
               <h4 className="mb-2 text-lg font-semibold text-center text-white-800 dark:text-white/90 xl:text-left">
-                {metadata.name}
+                {metadata.roles[0]}
               </h4>
               <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -27,12 +27,12 @@ const UserMetaCard = ({ metadata }: UserMetaCardProps) => {
                 </p>
               </div>
             </div>
-            <div className="mt-4 grid gap-2">
+            {/* <div className="mt-4 grid gap-2">
               <div><strong>Ad Budget:</strong> ${metadata.adBudget?.toLocaleString()}</div>
               <div><strong>Monthly Budget:</strong> ${metadata.monthlyBudget?.toLocaleString()}</div>
               <div><strong>Daily Limit:</strong> ${metadata.dailySpendingLimit?.toLocaleString()}</div>
               <div><strong>ROI Target:</strong> {(metadata.roiTarget * 100).toFixed(1)}%</div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

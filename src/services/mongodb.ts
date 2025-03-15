@@ -48,11 +48,19 @@ const connectDB = async () => {
       throw new Error('MongoDB URI is not defined in configuration');
     }
 
-    await mongoose.connect(dbConfig.uri, {
-      dbName: dbConfig.dbName,
-      w: 'majority'
-    });
-    console.log(`MongoDB connected successfully to ${dbConfig.dbName}`);
+    // Create a new Mongoose connection
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(dbConfig.uri, {
+        dbName: dbConfig.dbName,
+        // Add these options for better compatibility
+        serverApi: {
+          version: '1',
+          strict: true,
+          deprecationErrors: true
+        }
+      });
+      console.log(`MongoDB connected successfully to ${dbConfig.dbName}`);
+    }
   } catch (error) {
     console.error('MongoDB connection error:', error);
     throw error;
@@ -62,7 +70,7 @@ const connectDB = async () => {
 // Disconnect from database
 const disconnectDB = async () => {
   try {
-    await mongoose.disconnect();
+    await mongoose.connection.close();
     console.log('MongoDB disconnected successfully');
   } catch (error) {
     console.error('MongoDB disconnection error:', error);

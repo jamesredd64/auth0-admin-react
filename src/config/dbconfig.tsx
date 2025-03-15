@@ -1,11 +1,13 @@
-interface DbConfig {
-  uri: string;
-  dbName: string;
-}
+import mongoose from 'mongoose';
 
-const config: DbConfig = {
-  uri: process.env.MONGODB_URI || 'mongodb+srv://<username>:<password>@cluster0.mongodb.net',
-  dbName: process.env.MONGODB_DB_NAME || 'admin-dashboard'
-};
+// interface DbConfig {
+//   uri: string;
+//   dbName: string;
+// }
 
-export default config;
+// const config: DbConfig = {
+//   uri:  'mongodb+srv://<username>:<password>@cluster0.mongodb.net',
+//   dbName:  'admin-dashboard'
+// };
+
+// export default config;

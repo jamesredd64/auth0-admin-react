@@ -5,12 +5,12 @@ import UserInfoCard from "../components/UserProfile/UserInfoCard";
 import UserAddressCard from "../components/UserProfile/UserAddressCard";
 import PageMeta from "../components/common/PageMeta";
 import type { UserMetadata } from "../types/user";
-import type { UserProfile } from "../services/userService";
+// import type { UserProfile } from "../services/userService";
 import React from "react";
 
 export default function UserProfiles() {
-  const [userMetadata] = useGlobalStorage<UserMetadata | null>('userMetadata', null);
-  const [mongoUser] = useGlobalStorage<UserProfile | null>('mongoUser', null);
+  const [userMetadata, setUserMetadata] = useGlobalStorage<UserMetadata | null>('userMetadata', null);
+  // const [mongoUser] = useGlobalStorage<UserProfile | null>('mongoUser', null);
 
   if (!userMetadata) {
     return <div>Loading user data...</div>;
@@ -29,8 +29,18 @@ export default function UserProfiles() {
         </h3>
         <div className="space-y-6">
           <UserMetaCard metadata={userMetadata} />
-          <UserInfoCard user={mongoUser} />
-          <UserAddressCard address={mongoUser?.address} />
+          <UserInfoCard metadata={userMetadata} />
+          <UserAddressCard 
+            metadata={userMetadata} 
+            onUpdate={(newAddress) => {
+              // Update the global storage with new address
+              const updatedMetadata = {
+                ...userMetadata,
+                address: newAddress
+              };
+              setUserMetadata(updatedMetadata);
+            }}
+          />
         </div>
       </div>
     </>
