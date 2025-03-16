@@ -4,12 +4,14 @@ import path from 'path';
 import svgr from 'vite-plugin-svgr';
 
 export default defineConfig({
+  server: {
+    port: 3000, // Add this to set your desired port
+  },
   plugins: [
     react(),
     svgr({
       svgrOptions: {
         icon: true,
-        // This will transform your SVG to a React component
         exportType: "named",
         namedExport: "ReactComponent",
       },

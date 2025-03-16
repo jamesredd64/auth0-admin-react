@@ -8,9 +8,12 @@ import { UserMetadata } from "../../types/user";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const { logout, getIdTokenClaims } = useAuth0();
+  const { logout, getIdTokenClaims, user } = useAuth0();  // Add user here
   const [userMetadata] = useGlobalStorage<UserMetadata | null>('userMetadata', null);
-  console.log('userData ', userMetadata?.email);
+
+  // Display name logic - use metadata first, fallback to Auth0 user info
+  const displayName = userMetadata?.email || user?.email || user?.name || "User";
+  const profilePicture = userMetadata?.picture || user?.picture || "/images/user/default-avatar.png";
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -22,24 +25,22 @@ export default function UserDropdown() {
 
   const handleLogout = async () => {
     try {
-      // Get the ID token
       const idTokenClaims = await getIdTokenClaims();
       const idToken = idTokenClaims?.__raw;
 
       const domain = 'dev-uizu7j8qzflxzjpy.us.auth0.com';
       const clientId = 'XFt8FzJrPByvX5WFaBj9wMS2yFXTjji6';
-      const returnTo = encodeURIComponent('http://localhost:3000/signed-out');
+      // Use window.location.origin to make it work in all environments
+      const returnTo = encodeURIComponent(`${window.location.origin}`);
 
       // Clear local storage
       localStorage.clear();
       sessionStorage.clear();
 
       // Construct the OIDC logout URL with ID token hint
-      const logoutUrl = `https://${domain}/oidc/logout?` +
-        `id_token_hint=${idToken}&` +
-        `post_logout_redirect_uri=${returnTo}&` +
-        `client_id=${clientId}&` +
-        `federated`;  // Add federated parameter to force logout from identity provider
+      const logoutUrl = `https://${domain}/v2/logout?` +
+        `returnTo=${returnTo}&` +
+        `client_id=${clientId}`;
 
       // Redirect to the logout URL
       window.location.assign(logoutUrl);
@@ -49,7 +50,7 @@ export default function UserDropdown() {
       // Fallback logout if the above fails
       logout({
         logoutParams: {
-          returnTo: 'http://localhost:3000/signed-out',
+          returnTo: window.location.origin,
           clientId: 'XFt8FzJrPByvX5WFaBj9wMS2yFXTjji6'
         }
       });
@@ -64,13 +65,13 @@ export default function UserDropdown() {
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
           <img 
-            src={userMetadata?.picture || "/images/user/default-avatar.png"} 
-            alt={userMetadata?.email || "User"} 
+            src={profilePicture} 
+            alt={displayName} 
           />
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">
-          {userMetadata?.email || "User"}
+          {displayName}
         </span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
