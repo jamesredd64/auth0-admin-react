@@ -22,6 +22,7 @@ export interface UserMetadata {
 
   // Profile related fields
   profile: {
+    marketingBudget: undefined;
     dateOfBirth?: string;
     gender?: string;
     company?: string;

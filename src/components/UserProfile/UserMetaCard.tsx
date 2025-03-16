@@ -32,9 +32,16 @@ const UserMetaCard = ({ metadata, onUpdate }: UserMetaCardProps) => {
         throw new Error('User ID not found');
       }
 
-      const response = await mongoDbapiClient.updateUser(user.sub, {
-        ...updatedData
-      });
+      const formattedData = {
+        ...updatedData,
+        profile: updatedData.profile ? {
+          ...updatedData.profile,
+          dateOfBirth: updatedData.profile.dateOfBirth ? new Date(updatedData.profile.dateOfBirth) : undefined,
+          marketingBudget: updatedData.profile.marketingBudget || undefined
+        } : undefined
+      };
+
+      const response = await mongoDbapiClient.updateUser(user.sub, formattedData);
 
       if (response.ok) {
         onUpdate?.(updatedData);
