@@ -47,14 +47,13 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
       }
 
       const response = await mongoDbapiClient.updateUser(user.sub, {
-        adBudget: editedMarketingInfo.adBudget,
-        costPerAcquisition: editedMarketingInfo.costPerAcquisition,
-        dailySpendingLimit: editedMarketingInfo.dailySpendingLimit,
-        marketingChannels: editedMarketingInfo.marketingChannels,
-        monthlyBudget: editedMarketingInfo.monthlyBudget,
-        preferredPlatforms: editedMarketingInfo.preferredPlatforms,
-        roiTarget: editedMarketingInfo.roiTarget,
-        industry: editedMarketingInfo.industry
+        profile: {
+          marketingBudget: {
+            amount: editedMarketingInfo.adBudget || 0,
+            frequency: 'monthly', // or get this from editedMarketingInfo if available
+            adCosts: editedMarketingInfo.costPerAcquisition || 0
+          }
+        }
       });
 
       if (response.ok) {

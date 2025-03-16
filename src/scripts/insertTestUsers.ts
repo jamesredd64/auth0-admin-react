@@ -1,4 +1,28 @@
-import { connectDB, disconnectDB, UserModel } from '../services/mongodb';
+import { UserModel } from '../../server/src/models/user';
+import mongoose from 'mongoose';
+import dbConfig from '../../server/src/config/db.config.js';
+
+const connectDB = async () => {
+  try {
+    await mongoose.connect(dbConfig.url, {
+      dbName: dbConfig.database
+    });
+    console.log('Connected to MongoDB');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
+};
+
+const disconnectDB = async () => {
+  try {
+    await mongoose.disconnect();
+    console.log('Disconnected from MongoDB');
+  } catch (error) {
+    console.error('MongoDB disconnection error:', error);
+    throw error;
+  }
+};
 
 const insertTestUsers = async () => {
   try {
