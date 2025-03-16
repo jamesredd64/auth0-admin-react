@@ -124,23 +124,33 @@ export const useMongoDbClient = () => {
     }
   }, [getAccessTokenSilently]);
 
-  const updateUser = useCallback(async (id: string, userData: Partial<UserData>) => {
+  const updateUser = useCallback(async (auth0Id: string, userData: Partial<UserData>) => {
     setLoading(true);
     setError(null);
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_BY_ID(id)}`, {
-        method: 'PUT',
+      // Use email instead of ID for the update
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_CREATE_OR_UPDATE}`, {
+        method: 'POST',
         headers,
-        body: JSON.stringify(userData),
+        body: JSON.stringify({
+          ...userData,
+          auth0Id // Include the auth0Id in the request
+        }),
       });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+
       setLoading(false);
-      return data;
+      return { ok: true, data };
     } catch (err) {
+      console.error('Update user error details:', err);
       handleError(err);
-      throw err;
+      return { ok: false, error: err instanceof Error ? err.message : 'Unknown error occurred' };
     }
   }, [getAccessTokenSilently]);
 

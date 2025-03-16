@@ -6,11 +6,13 @@ import UserMarketingCard from "../components/UserProfile/UserMarketingCard";
 import { useGlobalStorage } from "../hooks/useGlobalStorage";
 import { UserMetadata } from "../types/user";
 import { useMongoDbClient } from '../services/mongoDbClient';
+import Loader from "../components/common/Loader";
 
 export default function UserProfiles() {
   const [userMetadata, setUserMetadata] = useGlobalStorage<UserMetadata | null>('userMetadata', null);
   const mongoDbapiClient = useMongoDbClient();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!userMetadata) return <div>Loading...</div>;
 
@@ -76,6 +78,11 @@ export default function UserProfiles() {
       throw err;
     }
   };
+  {isLoading ? (
+    <div className="flex justify-center p-4">
+      <Loader size="medium" className="border-gray-900 dark:border-gray-100" />
+    </div>
+  ) : null}
 
   return (
     <>

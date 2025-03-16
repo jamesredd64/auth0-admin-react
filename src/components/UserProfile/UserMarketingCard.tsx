@@ -3,6 +3,8 @@ import Button from "../ui/button/Button.js";
 import { Modal } from "../ui/modal/index";
 import { useGlobalStorage } from "../../hooks/useGlobalStorage";
 import { UserMetadata } from "../../types/user.js";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useMongoDbClient } from "../../services/mongoDbClient";
 
 interface UserMarketingCardProps {
   metadata?: UserMetadata;
@@ -10,8 +12,12 @@ interface UserMarketingCardProps {
 }
 
 const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
+  const { user } = useAuth0();
+  const mongoDbapiClient = useMongoDbClient();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editedMarketingInfo, setEditedMarketingInfo] = useState<Partial<UserMetadata>>({});
+  const [editedMarketingInfo, setEditedMarketingInfo] = useState<
+    Partial<UserMetadata>
+  >({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +31,7 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
         monthlyBudget: metadata.monthlyBudget,
         preferredPlatforms: metadata.preferredPlatforms,
         roiTarget: metadata.roiTarget,
-        industry: metadata.industry
+        industry: metadata.industry,
       });
     }
     setIsEditModalOpen(true);
@@ -34,12 +40,32 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
   const handleSave = async () => {
     try {
       setIsLoading(true);
-      if (onUpdate) {
-        await onUpdate(editedMarketingInfo);
+      setError(null);
+
+      if (!user?.sub) {
+        throw new Error('User ID not found');
       }
-      setIsEditModalOpen(false);
+
+      const response = await mongoDbapiClient.updateUser(user.sub, {
+        adBudget: editedMarketingInfo.adBudget,
+        costPerAcquisition: editedMarketingInfo.costPerAcquisition,
+        dailySpendingLimit: editedMarketingInfo.dailySpendingLimit,
+        marketingChannels: editedMarketingInfo.marketingChannels,
+        monthlyBudget: editedMarketingInfo.monthlyBudget,
+        preferredPlatforms: editedMarketingInfo.preferredPlatforms,
+        roiTarget: editedMarketingInfo.roiTarget,
+        industry: editedMarketingInfo.industry
+      });
+
+      if (response.ok) {
+        onUpdate?.(editedMarketingInfo);
+        setIsEditModalOpen(false);
+      } else {
+        throw new Error(response.error || 'Failed to update marketing information');
+      }
     } catch (err) {
-      setError('Failed to update marketing information');
+      setError(err instanceof Error ? err.message : 'Failed to update marketing information');
+      console.error('Error updating marketing info:', err);
     } finally {
       setIsLoading(false);
     }
@@ -78,36 +104,60 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
         <div className="p-7">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">Ad Budget</span>
+              <span className="font-medium text-black dark:text-white">
+                Ad Budget
+              </span>
               <span>${metadata?.adBudget?.toLocaleString() ?? 0}</span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">Monthly Budget</span>
+              <span className="font-medium text-black dark:text-white">
+                Monthly Budget
+              </span>
               <span>${metadata?.monthlyBudget?.toLocaleString() ?? 0}</span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">Daily Spending Limit</span>
-              <span>${metadata?.dailySpendingLimit?.toLocaleString() ?? 0}</span>
+              <span className="font-medium text-black dark:text-white">
+                Daily Spending Limit
+              </span>
+              <span>
+                ${metadata?.dailySpendingLimit?.toLocaleString() ?? 0}
+              </span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">Cost Per Acquisition</span>
-              <span>${metadata?.costPerAcquisition?.toLocaleString() ?? 0}</span>
+              <span className="font-medium text-black dark:text-white">
+                Cost Per Acquisition
+              </span>
+              <span>
+                ${metadata?.costPerAcquisition?.toLocaleString() ?? 0}
+              </span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">ROI Target</span>
-              <span>{metadata?.roiTarget ? `${(metadata.roiTarget * 100).toFixed(1)}%` : '0%'}</span>
+              <span className="font-medium text-black dark:text-white">
+                ROI Target
+              </span>
+              <span>
+                {metadata?.roiTarget
+                  ? `${(metadata.roiTarget * 100).toFixed(1)}%`
+                  : "0%"}
+              </span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">Industry</span>
-              <span>{metadata?.industry ?? 'Not specified'}</span>
+              <span className="font-medium text-black dark:text-white">
+                Industry
+              </span>
+              <span>{metadata?.industry ?? "Not specified"}</span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">Marketing Channels</span>
-              <span>{metadata?.marketingChannels ?? 'Not specified'}</span>
+              <span className="font-medium text-black dark:text-white">
+                Marketing Channels
+              </span>
+              <span>{metadata?.marketingChannels ?? "Not specified"}</span>
             </div>
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">Preferred Platforms</span>
-              <span>{metadata?.preferredPlatforms ?? 'Not specified'}</span>
+              <span className="font-medium text-black dark:text-white">
+                Preferred Platforms
+              </span>
+              <span>{metadata?.preferredPlatforms ?? "Not specified"}</span>
             </div>
           </div>
         </div>
@@ -121,9 +171,7 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Edit Marketing Information
             </h2>
-            {error && (
-              <div className="text-red-500 text-sm">{error}</div>
-            )}
+            {error && <div className="text-red-500 text-sm">{error}</div>}
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -132,7 +180,12 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
                 <input
                   type="number"
                   value={editedMarketingInfo.adBudget}
-                  onChange={(e) => setEditedMarketingInfo(prev => ({ ...prev, adBudget: Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setEditedMarketingInfo((prev) => ({
+                      ...prev,
+                      adBudget: Number(e.target.value),
+                    }))
+                  }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
                 />
               </div>
@@ -143,7 +196,12 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
                 <input
                   type="number"
                   value={editedMarketingInfo.monthlyBudget}
-                  onChange={(e) => setEditedMarketingInfo(prev => ({ ...prev, monthlyBudget: Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setEditedMarketingInfo((prev) => ({
+                      ...prev,
+                      monthlyBudget: Number(e.target.value),
+                    }))
+                  }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
                 />
               </div>
@@ -154,7 +212,12 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
                 <input
                   type="number"
                   value={editedMarketingInfo.dailySpendingLimit}
-                  onChange={(e) => setEditedMarketingInfo(prev => ({ ...prev, dailySpendingLimit: Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setEditedMarketingInfo((prev) => ({
+                      ...prev,
+                      dailySpendingLimit: Number(e.target.value),
+                    }))
+                  }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
                 />
               </div>
@@ -165,7 +228,12 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
                 <input
                   type="number"
                   value={editedMarketingInfo.costPerAcquisition}
-                  onChange={(e) => setEditedMarketingInfo(prev => ({ ...prev, costPerAcquisition: Number(e.target.value) }))}
+                  onChange={(e) =>
+                    setEditedMarketingInfo((prev) => ({
+                      ...prev,
+                      costPerAcquisition: Number(e.target.value),
+                    }))
+                  }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
                 />
               </div>
@@ -175,8 +243,17 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
                 </label>
                 <input
                   type="number"
-                  value={editedMarketingInfo.roiTarget ? editedMarketingInfo.roiTarget * 100 : ''}
-                  onChange={(e) => setEditedMarketingInfo(prev => ({ ...prev, roiTarget: Number(e.target.value) / 100 }))}
+                  value={
+                    editedMarketingInfo.roiTarget
+                      ? editedMarketingInfo.roiTarget * 100
+                      : ""
+                  }
+                  onChange={(e) =>
+                    setEditedMarketingInfo((prev) => ({
+                      ...prev,
+                      roiTarget: Number(e.target.value) / 100,
+                    }))
+                  }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
                 />
               </div>
@@ -187,7 +264,12 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
                 <input
                   type="text"
                   value={editedMarketingInfo.industry}
-                  onChange={(e) => setEditedMarketingInfo(prev => ({ ...prev, industry: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedMarketingInfo((prev) => ({
+                      ...prev,
+                      industry: e.target.value,
+                    }))
+                  }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
                 />
               </div>
@@ -198,7 +280,12 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
                 <input
                   type="text"
                   value={editedMarketingInfo.marketingChannels}
-                  onChange={(e) => setEditedMarketingInfo(prev => ({ ...prev, marketingChannels: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedMarketingInfo((prev) => ({
+                      ...prev,
+                      marketingChannels: e.target.value,
+                    }))
+                  }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
                 />
               </div>
@@ -209,7 +296,12 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
                 <input
                   type="text"
                   value={editedMarketingInfo.preferredPlatforms}
-                  onChange={(e) => setEditedMarketingInfo(prev => ({ ...prev, preferredPlatforms: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedMarketingInfo((prev) => ({
+                      ...prev,
+                      preferredPlatforms: e.target.value,
+                    }))
+                  }
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700"
                 />
               </div>
@@ -221,11 +313,8 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
               >
                 Cancel
               </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Saving...' : 'Save'}
+              <Button onClick={handleSave} disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save"}
               </Button>
             </div>
           </div>

@@ -32,35 +32,27 @@ const UserAddressCard = ({ metadata = { address: defaultAddress } as UserMetadat
   };
 
   const handleSave = async () => {
-    console.log('[UserAddressCard] Starting save operation', editedAddress);
     try {
       setIsLoading(true);
       setError(null);
 
-      if (!user?.email) {
-        console.error('[UserAddressCard] No user email available');
-        throw new Error('User not authenticated');
+      if (!user?.sub) {
+        throw new Error('User ID not found');
       }
 
-      console.log('[UserAddressCard] Calling API to update address');
-      const response = await mongoDbapiClient.createOrUpdateUser({
-        email: user.email,
-        firstName: metadata?.firstName || '',
-        lastName: metadata?.lastName || '',
-        phoneNumber: metadata?.phoneNumber || '',
-        profile: {
-          profilePictureUrl: metadata?.profile?.profilePictureUrl || metadata?.picture || ''
-        },
+      const response = await mongoDbapiClient.updateUser(user.sub, {
         address: editedAddress
       });
 
-      console.log('[UserAddressCard] Address updated successfully:', response);
-      onUpdate(editedAddress);
-      setIsEditModalOpen(false);
+      if (response.ok) {
+        onUpdate?.(editedAddress);
+        setIsEditModalOpen(false);
+      } else {
+        throw new Error(response.error || 'Failed to update address');
+      }
     } catch (err) {
-      console.error('[UserAddressCard] Error saving address:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save address';
-      setError(`Error: ${errorMessage}`);
+      setError(err instanceof Error ? err.message : 'Failed to update address');
+      console.error('Error updating address:', err);
     } finally {
       setIsLoading(false);
     }

@@ -21,6 +21,7 @@ import Calendar from "./pages/Calendar";
 import Home from "./pages/Dashboard/Home";
 import React from "react";
 import SignedOut from "./pages/SignedOut";
+import Loader from './components/common/Loader';
 
 interface UserMetadata {
   adBudget: number;
@@ -122,13 +123,27 @@ function App() {
   }, [isAuthenticated, user, setUserMetadata]);
 
   if (isLoading) {
-    console.log("Loading...");
-    return <div>Loading...</div>;
+    return (
+      <div className="flex h-screen">
+        <div className="m-auto">
+          <Loader size="large" className="border-gray-900 dark:border-gray-100" />
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    console.log("Error:", error.message);
-    return <div>Oops... {error.message}</div>;
+    return (
+      <div className="p-4 text-red-500 flex flex-col items-center justify-center h-screen">
+        <div className="text-xl mb-4">{error.message}</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
   }
 
   return (
