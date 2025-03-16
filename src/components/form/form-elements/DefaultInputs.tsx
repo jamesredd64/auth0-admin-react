@@ -5,6 +5,7 @@ import Input from "../input/InputField";
 import Select from "../Select";
 import { CalenderIcon, EyeCloseIcon, EyeIcon, TimeIcon } from "../../../icons";
 import Flatpickr from "react-flatpickr";
+import React from "react";
 
 export default function DefaultInputs() {
   const [showPassword, setShowPassword] = useState(false);

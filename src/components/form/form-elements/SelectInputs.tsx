@@ -3,6 +3,7 @@ import ComponentCard from "../../common/ComponentCard";
 import Label from "../Label";
 import Select from "../Select";
 import MultiSelect from "../MultiSelect";
+import React from "react";
 
 export default function SelectInputs() {
   const options = [

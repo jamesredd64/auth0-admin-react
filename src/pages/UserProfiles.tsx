@@ -26,16 +26,64 @@ const UserProfiles = () => {
 
   // Fetch user data function
   const fetchUserData = async () => {
-    if (!user?.sub) return;
+    if (!user?.sub || !user?.email) return;
     
     try {
       setIsLoading(true);
       setError(null);
-      const data = await mongoDbapiClient.getUserById(user.sub);
-      console.log('user sub ' + user.sub);
-      setUserData(data);
+      
+      // First try to get user by auth0Id
+      try {
+        const data = await mongoDbapiClient.getUserById(user.sub);
+        if (data) {
+          setUserData(data);
+          return;
+        }
+      } catch (err) {
+        // Only log the error, don't throw yet
+        console.log('Failed to fetch by auth0Id:', err);
+      }
+
+      // If auth0Id lookup fails, try email
+      try {
+        const data = await mongoDbapiClient.getUserByEmail(user.email);
+        if (data) {
+          // Update the user with auth0Id if needed
+          if (!data.auth0Id) {
+            const updatedUser = await mongoDbapiClient.updateUser(data._id, {
+              auth0Id: user.sub
+            });
+            if (updatedUser.ok) {
+              setUserData(await updatedUser.json());
+            } else {
+              throw new Error('Failed to update auth0Id');
+            }
+          } else {
+            setUserData(data);
+          }
+          return;
+        }
+      } catch (err) {
+        console.log('Failed to fetch by email:', err);
+      }
+
+      // Only create a new user if both lookups fail
+      console.log('No existing user found, creating new user...');
+      const newUser = await mongoDbapiClient.createUser({
+        email: user.email,
+        auth0Id: user.sub,
+        firstName: user.given_name,
+        lastName: user.family_name,
+        profile: {
+          profilePictureUrl: user.picture
+        }
+      });
+      setUserData(newUser);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load user data. Please try again later.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load user data';
+      setError(errorMessage);
+      console.error('Error fetching user data:', err);
     } finally {
       setIsLoading(false);
     }

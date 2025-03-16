@@ -31,79 +31,41 @@ export const useMongoDbClient = () => {
     };
   }, [getAccessTokenSilently]);
 
-  const fetchWithRetry = useCallback(async (url: string, options: RequestInit): Promise<Response> => {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      console.log(`[MongoDB Client] Attempt ${attempt + 1}/${MAX_RETRIES + 1}`, {
-        url,
-        method: options.method || 'GET',
-        requestInProgress: requestInProgress.current
+  const getUserById = async (userId: string) => {
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
+        method: 'GET',
+        headers
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      throw error;
+    }
+  };
+
+  // Add retry logic for failed requests
+  const fetchWithRetry = async (url: string, options: RequestInit, retries = MAX_RETRIES) => {
+    for (let i = 0; i < retries; i++) {
       try {
-        if (attempt > 0) {
-          await delay(RETRY_DELAY);
-        }
-        
         const response = await fetch(url, options);
-        console.log('[MongoDB Client] Response:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url
-        });
-        
         if (!response.ok) {
-          const errorBody = await response.text();
-          console.error('[MongoDB Client] Error response body:', errorBody);
-          throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return response;
-      } catch (err) {
-        lastError = err as Error;
-        console.error('[MongoDB Client] Request failed:', {
-          error: err,
-          message: err instanceof Error ? err.message : 'Unknown error',
-          url,
-          attempt
-        });
-        
-        if (attempt === MAX_RETRIES) {
-          throw new Error(`Request failed after ${MAX_RETRIES + 1} attempts: ${lastError.message}`);
-        }
+        return await response.json();
+      } catch (error) {
+        if (i === retries - 1) throw error;
+        await delay(RETRY_DELAY * Math.pow(2, i));
       }
     }
-    
-    throw lastError;
-  }, []);
-
-  const getUserById = useCallback(async (userId: string) => {
-    if (requestInProgress.current) {
-      console.log('[MongoDB Client] Request already in progress, skipping');
-      return;
-    }
-
-    try {
-      requestInProgress.current = true;
-      setLoading(true);
-      setError(null);
-      
-      const headers = await getAuthHeaders();
-      const response = await fetchWithRetry(`/api/users/${userId}`, { headers });
-      const data = await response.json();
-      console.log('[MongoDB Client] Successfully fetched user data:', { userId, data });
-      return data;
-    } catch (err) {
-      const apiError: ApiError = {
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-      };
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-      requestInProgress.current = false;
-    }
-  }, [getAuthHeaders, fetchWithRetry]);
+  };
 
   const updateUser = useCallback(async (userId: string, userData: Partial<UserMetadata>) => {
     setLoading(true);
@@ -128,10 +90,59 @@ export const useMongoDbClient = () => {
     }
   }, [getAccessTokenSilently]);
 
+  const getUserByEmail = useCallback(async (email: string) => {
+    setLoading(true);
+    try {
+      setError(null);
+      
+      const headers = await getAuthHeaders();
+      const response = await fetchWithRetry(`/api/users/email/${email}`, { headers });
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      const apiError: ApiError = {
+        message: err instanceof Error ? err.message : 'An unknown error occurred',
+      };
+      setError(apiError);
+      throw apiError;
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthHeaders, fetchWithRetry]);
+
+  const createUser = useCallback(async (userData: Partial<UserMetadata>) => {
+    setLoading(true);
+    try {
+      setError(null);
+      const headers = await getAuthHeaders();
+      const response = await fetch(`/api/users`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(userData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      const apiError: ApiError = {
+        message: err instanceof Error ? err.message : 'An unknown error occurred',
+      };
+      setError(apiError);
+      throw apiError;
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthHeaders]);
+
   return {
     getUserById,
     updateUser,
     error,
     loading,
+    getUserByEmail,
+    createUser
   };
 };

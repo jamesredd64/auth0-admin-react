@@ -3,6 +3,7 @@
   "private": true,
   "version": "2.0.1",
   "scripts": {
+    "update-svg": "scripts\\update-svg-imports.cmd",
     "dev": "vite",
     "server": "cd server && npm run start",
     "dev:full": "concurrently \"npm run dev\" \"npm run server\"",

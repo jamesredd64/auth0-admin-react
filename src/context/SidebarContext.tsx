@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import React from "react";
 
 type SidebarContextType = {
   isExpanded: boolean;

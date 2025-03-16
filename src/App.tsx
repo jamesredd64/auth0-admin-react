@@ -1,3 +1,4 @@
+
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useAuth0 } from '@auth0/auth0-react';
 import { useGlobalStorage } from './hooks/useGlobalStorage';
