@@ -1,3 +1,16 @@
+interface MarketingBudget {
+  amount: number;
+  frequency: string;
+  adCosts: number;
+}
+
+interface Profile {
+  dateOfBirth?: Date;
+  gender?: string;
+  profilePictureUrl?: string;
+  marketingBudget?: MarketingBudget;
+}
+
 export interface UserMetadata {
   industry: ReactNode;
   name: string;
@@ -21,15 +34,7 @@ export interface UserMetadata {
   roiTarget: number;
 
   // Profile related fields
-  profile: {
-    marketingBudget: undefined;
-    dateOfBirth?: string;
-    gender?: string;
-    company?: string;
-    position?: string;
-    bio?: string;
-    profilePictureUrl?: string;
-  };
+  profile?: Profile;
 
   // Address related fields
   address: {

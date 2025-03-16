@@ -3,13 +3,10 @@ import { UserMetadata } from "../../types/user.js";
 import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal/index";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useMongoDbClient } from '../../services/mongoDbClient';
-// import { useGlobalStorage } from '../../utils/globalStorage';
-import { useGlobalStorage } from "../../hooks/useGlobalStorage";
 
 interface UserAddressCardProps {
   metadata: UserMetadata;
-  onUpdate: (newAddress: UserMetadata['address']) => void;
+  onUpdate: (newAddress: Partial<UserMetadata>) => void;
 }
 
 const defaultAddress = {
@@ -21,9 +18,6 @@ const defaultAddress = {
 };
 
 const UserAddressCard = ({ metadata = { address: defaultAddress } as UserMetadata, onUpdate }: UserAddressCardProps) => {
-  const { user } = useAuth0();
-  const mongoDbapiClient = useMongoDbClient();
-  const [userMetadata] = useGlobalStorage<UserMetadata | null>('userMetadata', null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editedAddress, setEditedAddress] = useState(metadata?.address || defaultAddress);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,34 +33,9 @@ const UserAddressCard = ({ metadata = { address: defaultAddress } as UserMetadat
       setIsLoading(true);
       setError(null);
 
-      if (!user?.sub) {
-        throw new Error('User ID not found');
-      }
-
-      // Merge with existing data
-      const updateData = {
-        ...userMetadata, // Include all existing user data
-        email: userMetadata?.email, // Ensure required field is included
-        address: editedAddress // Update only the address portion
-      };
-
-      // Convert dateOfBirth to Date if it exists
-      const formattedData = {
-        ...updateData,
-        profile: updateData.profile ? {
-          ...updateData.profile,
-          dateOfBirth: updateData.profile.dateOfBirth ? new Date(updateData.profile.dateOfBirth) : undefined
-        } : undefined
-      };
-      
-      const response = await mongoDbapiClient.updateUser(user.sub, formattedData);
-
-      if (response.ok) {
-        onUpdate?.(editedAddress);
-        setIsEditModalOpen(false);
-      } else {
-        throw new Error(response.error || 'Failed to update address');
-      }
+      // Update parent component state
+      onUpdate({ address: editedAddress });
+      setIsEditModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update address');
       console.error('Error updating address:', err);

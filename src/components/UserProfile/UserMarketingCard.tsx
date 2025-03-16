@@ -1,23 +1,17 @@
 import React, { useState } from "react";
 import Button from "../ui/button/Button.js";
 import { Modal } from "../ui/modal/index";
-import { useGlobalStorage } from "../../hooks/useGlobalStorage";
-import { UserMetadata } from "../../types/user.js";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useMongoDbClient } from "../../services/mongoDbClient";
+import { UserMetadata } from "../../types/user.js";
 
 interface UserMarketingCardProps {
   metadata?: UserMetadata;
-  onUpdate?: (newInfo: Partial<UserMetadata>) => void;
+  onUpdate: (newInfo: Partial<UserMetadata>) => void;
 }
 
 const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
-  const { user } = useAuth0();
-  const mongoDbapiClient = useMongoDbClient();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editedMarketingInfo, setEditedMarketingInfo] = useState<
-    Partial<UserMetadata>
-  >({});
+  const [editedMarketingInfo, setEditedMarketingInfo] = useState<Partial<UserMetadata>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,26 +36,9 @@ const UserMarketingCard = ({ metadata, onUpdate }: UserMarketingCardProps) => {
       setIsLoading(true);
       setError(null);
 
-      if (!user?.sub) {
-        throw new Error('User ID not found');
-      }
-
-      const response = await mongoDbapiClient.updateUser(user.sub, {
-        profile: {
-          marketingBudget: {
-            amount: editedMarketingInfo.adBudget || 0,
-            frequency: 'monthly', // or get this from editedMarketingInfo if available
-            adCosts: editedMarketingInfo.costPerAcquisition || 0
-          }
-        }
-      });
-
-      if (response.ok) {
-        onUpdate?.(editedMarketingInfo);
-        setIsEditModalOpen(false);
-      } else {
-        throw new Error(response.error || 'Failed to update marketing information');
-      }
+      // Update parent component state
+      onUpdate(editedMarketingInfo);
+      setIsEditModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update marketing information');
       console.error('Error updating marketing info:', err);

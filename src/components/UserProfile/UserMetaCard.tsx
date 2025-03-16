@@ -3,21 +3,16 @@ import { UserMetadata } from "../../types/user.js";
 import Button from "../ui/button/Button.js";
 import UserMetaEditForm from "./UserMetaEditForm";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useMongoDbClient } from '../../services/mongoDbClient';
 
 interface UserMetaCardProps {
   metadata: UserMetadata;
-  onUpdate?: (newInfo: Partial<UserMetadata>) => void;
+  onUpdate: (newInfo: Partial<UserMetadata>) => void;
 }
 
 const UserMetaCard = ({ metadata, onUpdate }: UserMetaCardProps) => {
-  const { user } = useAuth0();
-  const mongoDbapiClient = useMongoDbClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  if (!metadata) return null;
 
   const handleEditClick = () => {
     setIsEditModalOpen(true);
@@ -28,27 +23,9 @@ const UserMetaCard = ({ metadata, onUpdate }: UserMetaCardProps) => {
       setIsLoading(true);
       setError(null);
 
-      if (!user?.sub) {
-        throw new Error('User ID not found');
-      }
-
-      const formattedData = {
-        ...updatedData,
-        profile: updatedData.profile ? {
-          ...updatedData.profile,
-          dateOfBirth: updatedData.profile.dateOfBirth ? new Date(updatedData.profile.dateOfBirth) : undefined,
-          marketingBudget: updatedData.profile.marketingBudget || undefined
-        } : undefined
-      };
-
-      const response = await mongoDbapiClient.updateUser(user.sub, formattedData);
-
-      if (response.ok) {
-        onUpdate?.(updatedData);
-        setIsEditModalOpen(false);
-      } else {
-        throw new Error(response.error || 'Failed to update profile information');
-      }
+      // Update parent component state
+      onUpdate(updatedData);
+      setIsEditModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile information');
       console.error('Error updating profile:', err);

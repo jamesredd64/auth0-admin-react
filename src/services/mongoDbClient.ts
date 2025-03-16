@@ -1,52 +1,24 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { UserMetadata } from '../types/user';
 
-const API_CONFIG = {
-  BASE_URL: process.env.NODE_ENV === 'production' 
-    ? 'https://auth0-admin-react-server-1c6czddjr-jamesredd64s-projects.vercel.app/api'
-    : 'http://localhost:3001/api',
-  ENDPOINTS: {
-    USERS: '/users',
-    USER_BY_ID: (id: string) => `/users/${id}`,
-    USER_CREATE_OR_UPDATE: '/users/createOrUpdate'
-  }
-};
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 1000;
 
 interface ApiError {
   message: string;
   status?: number;
 }
 
-export interface UserData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber?: string;
-  profile?: {
-    dateOfBirth?: Date;
-    gender?: string;
-    profilePictureUrl?: string;
-    marketingBudget?: {
-      amount: number;
-      frequency: 'daily' | 'monthly' | 'quarterly' | 'yearly';
-      adCosts: number;
-    };
-  };
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    zipCode?: string;
-    country?: string;
-  };
-}
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const useMongoDbClient = () => {
   const { getAccessTokenSilently } = useAuth0();
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
+  const requestInProgress = useRef<boolean>(false);
 
-  const getAuthHeaders = async () => {
+  const getAuthHeaders = useCallback(async () => {
     const token = await getAccessTokenSilently({
       authorizationParams: {
         audience: 'https://dev-uizu7j8qzflxzjpy.us.auth0.com/api/v2/',
@@ -57,205 +29,108 @@ export const useMongoDbClient = () => {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
-  };
-
-  const handleError = (err: any) => {
-    console.error('MongoDB API Error:', err);
-    const apiError: ApiError = {
-      message: err instanceof Error ? err.message : 'An unknown error occurred',
-    };
-    setError(apiError);
-    setLoading(false);
-  };
-
-  const createUser = useCallback(async (userData: UserData) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(userData),
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setLoading(false);
-      return data;
-    } catch (err) {
-      handleError(err);
-      throw err;
-    }
   }, [getAccessTokenSilently]);
 
-  const getAllUsers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS}`, {
-        headers,
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setLoading(false);
-      return data;
-    } catch (err) {
-      handleError(err);
-      throw err;
-    }
-  }, [getAccessTokenSilently]);
-
-  const getUserById = useCallback(async (id: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_BY_ID(id)}`, {
-        headers,
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setLoading(false);
-      return data;
-    } catch (err) {
-      handleError(err);
-      throw err;
-    }
-  }, [getAccessTokenSilently]);
-
-  const updateUser = useCallback(async (auth0Id: string, userData: Partial<UserData>) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const headers = await getAuthHeaders();
-      // Use email instead of ID for the update
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_CREATE_OR_UPDATE}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          ...userData,
-          auth0Id // Include the auth0Id in the request
-        }),
+  const fetchWithRetry = useCallback(async (url: string, options: RequestInit): Promise<Response> => {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      console.log(`[MongoDB Client] Attempt ${attempt + 1}/${MAX_RETRIES + 1}`, {
+        url,
+        method: options.method || 'GET',
+        requestInProgress: requestInProgress.current
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || `Server error: ${response.status}`);
+      try {
+        if (attempt > 0) {
+          await delay(RETRY_DELAY);
+        }
+        
+        const response = await fetch(url, options);
+        console.log('[MongoDB Client] Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url
+        });
+        
+        if (!response.ok) {
+          const errorBody = await response.text();
+          console.error('[MongoDB Client] Error response body:', errorBody);
+          throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
+        }
+        return response;
+      } catch (err) {
+        lastError = err as Error;
+        console.error('[MongoDB Client] Request failed:', {
+          error: err,
+          message: err instanceof Error ? err.message : 'Unknown error',
+          url,
+          attempt
+        });
+        
+        if (attempt === MAX_RETRIES) {
+          throw new Error(`Request failed after ${MAX_RETRIES + 1} attempts: ${lastError.message}`);
+        }
       }
-
-      setLoading(false);
-      return { ok: true, data };
-    } catch (err) {
-      console.error('Update user error details:', err);
-      handleError(err);
-      return { ok: false, error: err instanceof Error ? err.message : 'Unknown error occurred' };
     }
-  }, [getAccessTokenSilently]);
+    
+    throw lastError;
+  }, []);
 
-  const deleteUser = useCallback(async (id: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_BY_ID(id)}`, {
-        method: 'DELETE',
-        headers,
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setLoading(false);
-      return data;
-    } catch (err) {
-      handleError(err);
-      throw err;
+  const getUserById = useCallback(async (userId: string) => {
+    if (requestInProgress.current) {
+      console.log('[MongoDB Client] Request already in progress, skipping');
+      return;
     }
-  }, [getAccessTokenSilently]);
 
-  const deleteAllUsers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS}`, {
-        method: 'DELETE',
-        headers,
-      });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setLoading(false);
-      return data;
-    } catch (err) {
-      handleError(err);
-      throw err;
-    }
-  }, [getAccessTokenSilently]);
-
-  const createOrUpdateUser = useCallback(async (userData: UserData) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_CREATE_OR_UPDATE}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(userData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
-      }
-
-      setLoading(false);
-      return data;
-    } catch (err) {
-      console.error('Detailed error:', err);
-      handleError(err);
-      throw err;
-    }
-  }, [getAccessTokenSilently]);
-
-  const getUserByEmail = useCallback(async (email: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS}/email/${email}`, {
-        method: 'GET',
-        headers,
-      });
+      requestInProgress.current = true;
+      setLoading(true);
+      setError(null);
       
-      // Return null for 404 (user not found) instead of throwing an error
-      if (response.status === 404) {
-        setLoading(false);
-        return null;
-      }
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
+      const headers = await getAuthHeaders();
+      const response = await fetchWithRetry(`/api/users/${userId}`, { headers });
       const data = await response.json();
-      setLoading(false);
+      console.log('[MongoDB Client] Successfully fetched user data:', { userId, data });
       return data;
     } catch (err) {
-      handleError(err);
-      throw err;
+      const apiError: ApiError = {
+        message: err instanceof Error ? err.message : 'An unknown error occurred',
+      };
+      setError(apiError);
+      throw apiError;
+    } finally {
+      setLoading(false);
+      requestInProgress.current = false;
+    }
+  }, [getAuthHeaders, fetchWithRetry]);
+
+  const updateUser = useCallback(async (userId: string, userData: Partial<UserMetadata>) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetchWithRetry(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(userData)
+      });
+      return response;
+    } catch (err) {
+      const apiError: ApiError = {
+        message: err instanceof Error ? err.message : 'An unknown error occurred',
+      };
+      setError(apiError);
+      throw apiError;
+    } finally {
+      setLoading(false);
     }
   }, [getAccessTokenSilently]);
 
   return {
-    createUser,
-    getAllUsers,
     getUserById,
     updateUser,
-    deleteUser,
-    deleteAllUsers,
-    createOrUpdateUser,
-    getUserByEmail,
     error,
     loading,
   };

@@ -7,7 +7,7 @@ import { useMongoDbClient } from '../../services/mongoDbClient';
 
 interface UserInfoCardProps {
   metadata: UserMetadata;
-  onUpdate?: (newInfo: Partial<UserMetadata>) => void;
+  onUpdate: (newInfo: Partial<UserMetadata>) => void;
 }
 
 const defaultUserInfo = {
@@ -40,23 +40,9 @@ const UserInfoCard = ({ metadata, onUpdate }: UserInfoCardProps) => {
       setIsLoading(true);
       setError(null);
 
-      if (!user?.sub) {
-        throw new Error('User ID not found');
-      }
-
-      const response = await mongoDbapiClient.updateUser(user.sub, {
-        firstName: editedUserInfo.firstName,
-        lastName: editedUserInfo.lastName,
-        email: editedUserInfo.email,
-        phoneNumber: editedUserInfo.phoneNumber
-      });
-
-      if (response.ok) {
-        onUpdate?.(editedUserInfo);
-        setIsEditModalOpen(false);
-      } else {
-        throw new Error(response.error || 'Failed to update user information');
-      }
+      // Update parent component state
+      onUpdate(editedUserInfo);
+      setIsEditModalOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Error updating user:', err);
