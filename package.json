@@ -4,12 +4,15 @@
   "version": "2.0.1",
   "scripts": {
     "dev": "vite",
-    "server": "cd server && npm run dev",
+    "server": "cd server && npm run start",
     "dev:full": "concurrently \"npm run dev\" \"npm run server\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test:mongodb": "cd server && npm run test:mongodb",
     "preview": "vite preview",
-    "populate-db": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" node src/scripts/insertTestUsers.ts"
+    "populate-db": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" node src/scripts/insertTestUsers.ts",
+    "test:server": "ts-node src/scripts/testServerConnection.ts",
+    "git": "scripts\\git-operations.cmd"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.3.0",

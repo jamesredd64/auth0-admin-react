@@ -1,45 +1,109 @@
-import { useGlobalStorage } from "../hooks/useGlobalStorage.js";
-import PageBreadcrumb from "../components/common/PageBreadCrumb";
+import React, { useState } from "react";
 import UserMetaCard from "../components/UserProfile/UserMetaCard";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
 import UserAddressCard from "../components/UserProfile/UserAddressCard";
-import PageMeta from "../components/common/PageMeta";
-import type { UserMetadata } from "../types/user";
-// import type { UserProfile } from "../services/userService";
-import React from "react";
+import UserMarketingCard from "../components/UserProfile/UserMarketingCard";
+import { useGlobalStorage } from "../hooks/useGlobalStorage";
+import { UserMetadata } from "../types/user";
+import { useMongoDbClient } from '../services/mongoDbClient';
 
 export default function UserProfiles() {
   const [userMetadata, setUserMetadata] = useGlobalStorage<UserMetadata | null>('userMetadata', null);
-  // const [mongoUser] = useGlobalStorage<UserProfile | null>('mongoUser', null);
+  const mongoDbapiClient = useMongoDbClient();
+  const [error, setError] = useState<string | null>(null);
 
-  if (!userMetadata) {
-    return <div>Loading user data...</div>;
-  }
+  if (!userMetadata) return <div>Loading...</div>;
+
+  const handleAddressUpdate = async (newAddress: UserMetadata['address']) => {
+    try {
+      setError(null);
+      
+      if (!userMetadata.email) {
+        throw new Error('User email not found');
+      }
+
+      const response = await mongoDbapiClient.createOrUpdateUser({
+        email: userMetadata.email,
+        firstName: userMetadata.firstName || '',
+        lastName: userMetadata.lastName || '',
+        phoneNumber: userMetadata.phoneNumber || '',
+        profile: {
+          profilePictureUrl: userMetadata.profile?.profilePictureUrl || userMetadata.picture || ''
+        },
+        address: newAddress
+      });
+
+      // Update local state
+      setUserMetadata({
+        ...userMetadata,
+        address: newAddress
+      });
+
+      return response;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update address';
+      setError(errorMessage);
+      throw err;
+    }
+  };
+
+  const handleMetaUpdate = async (newMeta: Partial<UserMetadata>) => {
+    try {
+      setError(null);
+      // Add your update logic here
+      setUserMetadata({
+        ...userMetadata,
+        ...newMeta
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update profile';
+      setError(errorMessage);
+      throw err;
+    }
+  };
+
+  const handleMarketingUpdate = async (newMarketing: Partial<UserMetadata>) => {
+    try {
+      setError(null);
+      // Add your update logic here
+      setUserMetadata({
+        ...userMetadata,
+        ...newMarketing
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update marketing info';
+      setError(errorMessage);
+      throw err;
+    }
+  };
 
   return (
     <>
-      <PageMeta
-        title="User Profile Dashboard"
-        description="User profile and settings management dashboard"
-      />
-      <PageBreadcrumb pageTitle="Profile" />
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
         <h3 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-7">
           Profile
         </h3>
+        {error && (
+          <div className="mb-4 text-red-500">
+            {error}
+          </div>
+        )}
         <div className="space-y-6">
-          <UserMetaCard metadata={userMetadata} />
-          <UserInfoCard metadata={userMetadata} />
+          <UserMetaCard 
+            metadata={userMetadata} 
+            onUpdate={handleMetaUpdate}
+          />
+          <UserInfoCard 
+            metadata={userMetadata}
+            onUpdate={handleMetaUpdate}
+          /> 
           <UserAddressCard 
             metadata={userMetadata} 
-            onUpdate={(newAddress) => {
-              // Update the global storage with new address
-              const updatedMetadata = {
-                ...userMetadata,
-                address: newAddress
-              };
-              setUserMetadata(updatedMetadata);
-            }}
+            onUpdate={handleAddressUpdate}
+          />
+          <UserMarketingCard 
+            metadata={userMetadata}
+            onUpdate={handleMarketingUpdate}
           />
         </div>
       </div>

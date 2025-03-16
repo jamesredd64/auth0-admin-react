@@ -3,11 +3,14 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import React from "react";
-// import { Link } from "react-router-dom";
+import { useGlobalStorage } from "../../hooks/useGlobalStorage";
+import { UserMetadata } from "../../types/user";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, logout } = useAuth0();
+  const { logout, getIdTokenClaims } = useAuth0();
+  const [userMetadata] = useGlobalStorage<UserMetadata | null>('userMetadata', null);
+  console.log('userData ', userMetadata?.email);
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -17,12 +20,40 @@ export default function UserDropdown() {
     setIsOpen(false);
   }
 
-  const handleLogout = () => {
-    logout({ 
-      logoutParams: {
-        returnTo: window.location.origin
-      }
-    });
+  const handleLogout = async () => {
+    try {
+      // Get the ID token
+      const idTokenClaims = await getIdTokenClaims();
+      const idToken = idTokenClaims?.__raw;
+
+      const domain = 'dev-uizu7j8qzflxzjpy.us.auth0.com';
+      const clientId = 'XFt8FzJrPByvX5WFaBj9wMS2yFXTjji6';
+      const returnTo = encodeURIComponent('http://localhost:3000/signed-out');
+
+      // Clear local storage
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Construct the OIDC logout URL with ID token hint
+      const logoutUrl = `https://${domain}/oidc/logout?` +
+        `id_token_hint=${idToken}&` +
+        `post_logout_redirect_uri=${returnTo}&` +
+        `client_id=${clientId}&` +
+        `federated`;  // Add federated parameter to force logout from identity provider
+
+      // Redirect to the logout URL
+      window.location.assign(logoutUrl);
+    } catch (error) {
+      console.error('Logout error:', error);
+      
+      // Fallback logout if the above fails
+      logout({
+        logoutParams: {
+          returnTo: 'http://localhost:3000/signed-out',
+          clientId: 'XFt8FzJrPByvX5WFaBj9wMS2yFXTjji6'
+        }
+      });
+    }
   };
 
   return (
@@ -33,13 +64,13 @@ export default function UserDropdown() {
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
           <img 
-            src={user?.picture || "/images/user/default-avatar.png"} 
-            alt={user?.name || "User"} 
+            src={userMetadata?.picture || "/images/user/default-avatar.png"} 
+            alt={userMetadata?.email || "User"} 
           />
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">
-          {user?.name || "User"}
+          {userMetadata?.email || "User"}
         </span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${

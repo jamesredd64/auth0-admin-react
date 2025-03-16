@@ -1,11 +1,11 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { useApiService } from '../services/api.service';
+import { useApi } from '../services/api.service';
 import { useState, useEffect } from 'react';
 import React from 'react';
 
 const TestMongoDB = () => {
   const { user } = useAuth0();
-  const api = useApiService();
+  const api = useApi();  // Updated this line
   const [status, setStatus] = useState<string>('');
   const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +57,7 @@ const TestMongoDB = () => {
         }
       };
 
-      const savedUser = await api.createUser(userData);
+      await api.updateUserByEmail(user.email, userData);
       setStatus('User saved successfully!');
       await loadUsers(); // Reload the users list
     } catch (err: any) {

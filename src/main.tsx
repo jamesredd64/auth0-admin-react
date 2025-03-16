@@ -12,6 +12,7 @@ import { AppWrapper } from "./components/common/PageMeta";
 import { ThemeProvider } from "./context/ThemeContext";
 import React from "react";
 // import { connectDB } from './services/mongodb';
+import { Auth0Provider } from '@auth0/auth0-react';
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -19,7 +20,17 @@ createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <ThemeProvider>     
           <AppWrapper>
-            <App />
+            <Auth0Provider
+              domain="dev-uizu7j8qzflxzjpy.us.auth0.com"
+              clientId="XFt8FzJrPByvX5WFaBj9wMS2yFXTjji6"
+              authorizationParams={{
+                redirect_uri: window.location.origin,
+                audience: "https://dev-uizu7j8qzflxzjpy.us.auth0.com/api/v2/",
+                scope: "openid profile email"
+              }}
+            >
+              <App />
+            </Auth0Provider>
           </AppWrapper>
         </ThemeProvider>
       </AuthProvider>

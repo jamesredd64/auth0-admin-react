@@ -3,54 +3,64 @@ import { UserMetadata } from "../../types/user.js";
 import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal/index";
 import { useAuth0 } from "@auth0/auth0-react";
-import { userService } from '../../services/userService';
+import { useMongoDbClient } from '../../services/mongoDbClient';
 
 interface UserAddressCardProps {
   metadata: UserMetadata;
   onUpdate: (newAddress: UserMetadata['address']) => void;
 }
 
-const UserAddressCard = ({ metadata, onUpdate }: UserAddressCardProps) => {
+const defaultAddress = {
+  street: '',
+  city: '',
+  state: '',
+  zipCode: '',
+  country: ''
+};
+
+const UserAddressCard = ({ metadata = { address: defaultAddress } as UserMetadata, onUpdate }: UserAddressCardProps) => {
   const { user } = useAuth0();
+  const mongoDbapiClient = useMongoDbClient();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editedAddress, setEditedAddress] = useState(metadata.address);
+  const [editedAddress, setEditedAddress] = useState(metadata?.address || defaultAddress);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!metadata) return null;
-
   const handleEditClick = () => {
-    setEditedAddress(metadata.address);
+    setEditedAddress(metadata?.address || defaultAddress);
     setIsEditModalOpen(true);
   };
 
   const handleSave = async () => {
+    console.log('[UserAddressCard] Starting save operation', editedAddress);
     try {
       setIsLoading(true);
       setError(null);
 
-      if (!user?.sub) {
+      if (!user?.email) {
+        console.error('[UserAddressCard] No user email available');
         throw new Error('User not authenticated');
       }
 
-      // Update Supabase
-      await userService.updateUser(user.sub, {
-        address: {
-          street: editedAddress.street,
-          city: editedAddress.city,
-          state: editedAddress.state,
-          zip_code: editedAddress.zipCode, // Correctly map zipCode to zip_code
-          country: editedAddress.country
+      console.log('[UserAddressCard] Calling API to update address');
+      const response = await mongoDbapiClient.createOrUpdateUser({
+        email: user.email,
+        firstName: metadata?.firstName || '',
+        lastName: metadata?.lastName || '',
+        phoneNumber: metadata?.phoneNumber || '',
+        profile: {
+          profilePictureUrl: metadata?.profile?.profilePictureUrl || metadata?.picture || ''
         },
-        updated_at: new Date().toISOString()
+        address: editedAddress
       });
 
-      // Update local state through the callback
+      console.log('[UserAddressCard] Address updated successfully:', response);
       onUpdate(editedAddress);
       setIsEditModalOpen(false);
     } catch (err) {
-      console.error('Error saving address:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save address');
+      console.error('[UserAddressCard] Error saving address:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save address';
+      setError(`Error: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -58,9 +68,9 @@ const UserAddressCard = ({ metadata, onUpdate }: UserAddressCardProps) => {
 
   return (
     <>
-      <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-        <div className="border-b border-stroke px-7 py-4 dark:border-strokedark flex justify-between items-center">
-          <h4 className="font-semibold text-black dark:text-white">
+      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-lg font-semibold text-black dark:text-white">
             Address Information
           </h4>
           <Button
@@ -90,23 +100,23 @@ const UserAddressCard = ({ metadata, onUpdate }: UserAddressCardProps) => {
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <span className="font-medium text-black dark:text-white">Street</span>
-              <span>{metadata.address.street}</span>
+              <span>{metadata?.address?.street || 'Not set'}</span>
             </div>
             <div className="flex flex-col gap-2">
               <span className="font-medium text-black dark:text-white">City</span>
-              <span>{metadata.address.city}</span>
+              <span>{metadata?.address?.city || 'Not set'}</span>
             </div>
             <div className="flex flex-col gap-2">
               <span className="font-medium text-black dark:text-white">State</span>
-              <span>{metadata.address.state}</span>
+              <span>{metadata?.address?.state || 'Not set'}</span>
             </div>
             <div className="flex flex-col gap-2">
               <span className="font-medium text-black dark:text-white">ZIP Code</span>
-              <span>{metadata.address.zipCode}</span>
+              <span>{metadata?.address?.zipCode || 'Not set'}</span>
             </div>
             <div className="flex flex-col gap-2">
               <span className="font-medium text-black dark:text-white">Country</span>
-              <span>{metadata.address.country}</span>
+              <span>{metadata?.address?.country || 'Not set'}</span>
             </div>
           </div>
         </div>
@@ -114,10 +124,10 @@ const UserAddressCard = ({ metadata, onUpdate }: UserAddressCardProps) => {
 
       {/* Edit Modal */}
       <Modal
-        isOpen={isEditModalOpen}
+        isOpen={isEditModalOpen} className="!w-[50vw]"
         onClose={() => setIsEditModalOpen(false)}
       >
-        <div className="space-y-4">
+        <div className="space-y-4 p-6">
           <h2 className="text-xl font-semibold mb-4">Edit Address</h2>
           {error && (
             <div className="text-red-500 text-sm mb-4">

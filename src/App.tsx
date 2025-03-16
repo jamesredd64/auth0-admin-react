@@ -15,7 +15,7 @@ import Buttons from "./pages/UiElements/Buttons";
 import LineChart from "./pages/Charts/LineChart";
 import BarChart from "./pages/Charts/BarChart";
 import Calendar from "./pages/Calendar";
-import TestMongoDB from './pages/TestMongoDB';
+// import TestMongoDB from './pages/TestMongoDB';
 
 // import { ScrollToTop } from "./components/common/ScrollToTop";
  import Home from "./pages/Dashboard/Home";
@@ -140,7 +140,7 @@ function App() {
               <Route path="/videos" element={<Videos />} />
               <Route path="/line-chart" element={<LineChart />} />
               <Route path="/bar-chart" element={<BarChart />} />
-              <Route path="/test-mongodb" element={<TestMongoDB />} />
+              
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
