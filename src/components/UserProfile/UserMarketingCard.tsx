@@ -42,13 +42,22 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
     });
   }, [initialData]);
 
+  const handleUpdate = (newData: Partial<UserMetadata>) => {
+    userProfile.setHasUnsavedChanges(true);
+    // ... rest of your update logic
+  };
+  
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    // Set the form data
     setFormData(prev => ({
       marketingBudget: {
         ...prev.marketingBudget,
         [field]: field === 'frequency' ? e.target.value : Number(e.target.value)
       }
     }));
+    
+    // Set global unsaved changes flag
+    userProfile.setHasUnsavedChanges(true);
   };
 
   const handleSave = async () => {

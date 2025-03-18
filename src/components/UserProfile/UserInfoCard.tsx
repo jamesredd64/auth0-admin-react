@@ -45,7 +45,11 @@ export const UserInfoCard: React.FC<UserInfoCardProps> = ({ onUpdate, initialDat
       [field]: e.target.value
     }));
   };
-
+  const handleUpdate = (newData: Partial<UserMetadata>) => {
+    userProfile.setHasUnsavedChanges(true);
+    // ... rest of your update logic
+  };
+  
   const handleSave = async () => {
     try {
       if (!user?.sub) return;

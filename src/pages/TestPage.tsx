@@ -179,6 +179,7 @@ const UserProfile = () => {
       <PageBreadcrumb pageTitle="Profile" />
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-800/50 lg:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6"></div>
+        
         <UserMetaCard 
           onUpdate={(newInfo: Partial<UserMetadata>) => {
             handleUpdate({
@@ -194,9 +195,22 @@ const UserProfile = () => {
             email: userData.email,
             firstName: userData.firstName,
             lastName: userData.lastName,
-            profilePictureUrl: userData.profile.profilePictureUrl || ''
+            profilePictureUrl: userData.profile.profilePictureUrl || '',
+            phoneNumber: userData.phoneNumber || '',
+            address: userData.address?.street || '',
+            city: userData.address?.city || '',
+            state: userData.address?.state || '',
+            zipCode: userData.address?.zipCode || '',
+            country: userData.address?.country || '',
+            company: '',
+            jobTitle: '',
+            bio: '',
+            website: '',
+            socialLinks: {},
+            preferences: {}
           }}
         />
+        
         <UserMarketingCard 
           onUpdate={(newInfo: Partial<UserMetadata>) => {
             handleUpdate({
@@ -266,7 +280,7 @@ const UserProfile = () => {
           )}
         </div>
 
-        {/* Centered button container */}
+        {/* Centered button container
         <div className="flex justify-center mt-6">
           <button 
             onClick={handleSubmit}
@@ -277,7 +291,7 @@ const UserProfile = () => {
             </svg>
             Save Changes
           </button>
-        </div>
+        </div> */}
       </div>
     </>
   );

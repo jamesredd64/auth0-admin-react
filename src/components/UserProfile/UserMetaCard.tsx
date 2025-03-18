@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { UserMetadata } from "../../types/user.js";
 import Button from "../ui/button/Button.js";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -11,6 +11,18 @@ import { Modal } from "../ui/modal";
 interface UserMetaCardProps {
   onUpdate: (newInfo: Partial<UserMetadata>) => void;
   initialData: {
+    phoneNumber: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    company: string;
+    jobTitle: string;
+    bio: string;
+    website: string;
+    socialLinks: {};
+    preferences: {};
     email: string;
     firstName: string;
     lastName: string;
@@ -23,28 +35,85 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
   const { isOpen, openModal, closeModal } = useModal();
   const { user } = useAuth0();
   const userProfile = useUserProfileStore();
+  const [saveStatus, setSaveStatus] = useState<{ message: string; isError: boolean } | null>(null);
   
-  // Initialize local state with initialData
+  // Use the global hasUnsavedChanges state from userProfile store
+  const hasAnyChanges = userProfile.hasUnsavedChanges;
+
+  // Initialize local state with ALL fields from initialData
   const [formData, setFormData] = useState({
-    
     email: initialData.email || '',
     firstName: initialData.firstName || '',
     lastName: initialData.lastName || '',
-    profilePictureUrl: initialData.profilePictureUrl || ''
+    profilePictureUrl: initialData.profilePictureUrl || '',
+    phoneNumber: initialData.phoneNumber || '',
+    address: initialData.address || '',
+    city: initialData.city || '',
+    state: initialData.state || '',
+    zipCode: initialData.zipCode || '',
+    country: initialData.country || '',
+    company: initialData.company || '',
+    jobTitle: initialData.jobTitle || '',
+    bio: initialData.bio || '',
+    website: initialData.website || '',
+    socialLinks: initialData.socialLinks || {},
+    preferences: initialData.preferences || {}
   });
+
+  // Clear save status after 5 seconds
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (saveStatus) {
+      timeoutId = setTimeout(() => {
+        setSaveStatus(null);
+      }, 5000);
+    }
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [saveStatus]);
 
   // Update local state when initialData changes
   useEffect(() => {
     setFormData({
-     
       email: initialData.email || '',
       firstName: initialData.firstName || '',
       lastName: initialData.lastName || '',
-      profilePictureUrl: initialData.profilePictureUrl || ''
+      profilePictureUrl: initialData.profilePictureUrl || '',
+      phoneNumber: initialData.phoneNumber || '',
+      address: initialData.address || '',
+      city: initialData.city || '',
+      state: initialData.state || '',
+      zipCode: initialData.zipCode || '',
+      country: initialData.country || '',
+      company: initialData.company || '',
+      jobTitle: initialData.jobTitle || '',
+      bio: initialData.bio || '',
+      website: initialData.website || '',
+      socialLinks: initialData.socialLinks || {},
+      preferences: initialData.preferences || {}
     });
   }, [initialData]);
 
+  // Add debugging for state comparison
+  const hasChanges = useMemo(() => {
+    console.log('Current formData:', formData);
+    console.log('Initial Data:', initialData);
+    
+    const changes = Object.keys(formData).some(key => {
+      const hasChange = formData[key as keyof typeof formData] !== initialData[key as keyof typeof initialData];
+      console.log(`Comparing ${key}:`, formData[key as keyof typeof formData], initialData[key as keyof typeof initialData], hasChange);
+      return hasChange;
+    });
+    
+    console.log('Has changes:', changes);
+    return changes;
+  }, [formData, initialData]);
+
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    console.log('Input changed:', field, e.target.value);
     setFormData(prev => ({
       ...prev,
       [field]: e.target.value
@@ -55,18 +124,47 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
     try {
       if (!user?.sub) return;
       
+      // Transform formData to match UserMetadata structure
+      const transformedData: Partial<UserMetadata> = {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        profilePictureUrl: formData.profilePictureUrl,
+        phoneNumber: formData.phoneNumber,
+        address: {
+          street: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.zipCode,
+          country: formData.country
+        }
+      };
+      
       // Update through the store
-      onUpdate(formData);
+      onUpdate(transformedData);
+      setSaveStatus({ message: "Changes saved successfully", isError: false });
       
       // Close the modal
       closeModal();
     } catch (error) {
       console.error('Error saving meta info:', error);
+      setSaveStatus({ message: "Error saving changes", isError: true });
     }
   };
 
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6 group">
+      {/* Save Status Message */}
+      {saveStatus && (
+        <div className="mt-4 flex justify-center">
+          <span className={`text-center ${
+            saveStatus.isError ? 'text-red-500' : 'text-green-500'
+          }`}>
+            {saveStatus.message}
+          </span>
+        </div>
+      )}
+
       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <h3 className="font-medium text-black dark:text-white">
           User Profile
@@ -77,21 +175,22 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
+            {/* Profile Picture */}
             <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
-            <img src={formData.profilePictureUrl} alt={formData.firstName} className="w-full h-full object-cover" />
+              <img src={formData.profilePictureUrl} alt={formData.firstName} className="w-full h-full object-cover" />
             </div>
+
+            {/* Email Section */}
             <div className="order-3 xl:order-2">
               <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
-                
+                {`${formData.firstName} ${formData.lastName}`}
               </h4>
               <p className="text-center text-gray-600 dark:text-gray-400 xl:text-left">
                 {formData.email}
               </p>
-              {/* {formData.roles && formData.roles.length > 0 && (
-                <p className="text-center text-gray-600 dark:text-gray-400 xl:text-left">
-                  Role: {formData.roles[0]}
-                </p> */}
             </div>
+
+            {/* Social Icons */}
             <div className="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
               <div
                 className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
@@ -166,28 +265,32 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
               </div>
             </div>
           </div>
-          {/* <button
-            onClick={openModal}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
-          >
-            <svg
-              className="fill-current"
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206ZM12.9698 3.84272C13.2627 3.54982 13.7376 3.54982 14.0305 3.84272L14.6934 4.50563C14.9863 4.79852 14.9863 5.2734 14.6934 5.56629L14.044 6.21573L12.3204 4.49215L12.9698 3.84272ZM11.2597 5.55281L5.6359 11.1766C5.53309 11.2794 5.46238 11.4099 5.43238 11.5522L5.01758 13.5185L6.98394 13.1037C7.1262 13.0737 7.25666 13.003 7.35947 12.9002L12.9833 7.27639L11.2597 5.55281Z"
-                fill=""
-              />
-            </svg>
-            Edit
-          </button> */}
         </div>
+      </div>
+
+      {/* Global Save Button - visible when ANY card has changes */}
+      <div className={`flex justify-center mt-6 transition-opacity duration-200 ${!hasAnyChanges ? 'opacity-0' : 'opacity-100'}`}>
+        <button 
+          onClick={handleSave}
+          disabled={!hasAnyChanges}
+          className={`inline-flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-5 py-2 text-sm font-medium shadow-theme-xs transform transition-all duration-200 
+            ${!hasAnyChanges 
+              ? 'cursor-not-allowed text-gray-400 dark:text-gray-600' 
+              : 'text-gray-700 hover:bg-gray-50 hover:text-gray-800 hover:scale-105 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200'
+            }`}
+        >
+          <svg 
+            className={`fill-current ${!hasAnyChanges ? 'opacity-50' : ''}`} 
+            width="18" 
+            height="18" 
+            viewBox="0 0 18 18" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path fillRule="evenodd" clipRule="evenodd" d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206Z" fill=""/>
+          </svg>
+          Save All Changes
+        </button>
       </div>
 
       {/* Edit Modal */}
@@ -244,6 +347,7 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
           </form>
         </div>
       </Modal>
+      
     </div>
   );
 };

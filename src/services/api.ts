@@ -1,7 +1,7 @@
 import { useAuth0 } from '@auth0/auth0-react';
 
 const API_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-vercel-deployment-url/api'
+  ? 'https://auth0-admin-react-server-1c6czddjr-jamesredd64s-projects.vercel.app/api'
   : 'http://localhost:5000/api';
 
 export const useApi = () => {

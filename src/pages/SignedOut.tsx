@@ -16,10 +16,7 @@ const SignedOut = () => {
           </p>
           <button
             onClick={() => loginWithRedirect()}
-            className="inline-flex items-center justify-center rounded-lg py-3 px-10 text-center font-medium 
-            bg-brand-500 text-white border-2 border-transparent
-            hover:bg-white hover:text-brand-500 hover:border-brand-500 
-            transition-all duration-200"
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full border border-gray-300 hover:bg-gray-50 transform transition-transform duration-200 hover:scale-105"
           >
             Sign In
           </button>
@@ -30,3 +27,6 @@ const SignedOut = () => {
 };
 
 export default SignedOut;
+
+
+

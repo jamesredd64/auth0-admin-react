@@ -5,7 +5,7 @@ import { useGlobalStorage } from './hooks/useGlobalStorage';
 import AppLayout from "./layout/AppLayout";
 import { useEffect, useRef } from 'react';
 import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
+import UserProfiles from "./pages/UserProfiles-old-new";
 import Calendar from "./pages/Calendar";
 import Home from "./pages/Dashboard/Home";
 import TestPage from "./pages/TestPage";
