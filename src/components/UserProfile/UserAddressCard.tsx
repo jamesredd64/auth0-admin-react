@@ -1,61 +1,136 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UserMetadata } from "../../types/user.js";
-import Button from "../ui/button/Button";
-import { Modal } from "../ui/modal/index";
+import Button from "../ui/button/Button.js";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useUserProfileStore } from '../../stores/userProfileStore';
+import Input from "../form/input/InputField.js";
+import Label from "../form/Label.js";
+import { useModal } from "../../hooks/useModal";
+import { Modal } from "../ui/modal";
 
 interface UserAddressCardProps {
-  metadata: UserMetadata;
-  onUpdate: (newAddress: Partial<UserMetadata>) => void;
+  onUpdate: (newInfo: Partial<UserMetadata>) => void;
+  initialData: {
+    address: {
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      country: string;
+    };
+  };
 }
 
-const defaultAddress = {
-  street: '',
-  city: '',
-  state: '',
-  zipCode: '',
-  country: ''
-};
+export const UserAddressCard: React.FC<UserAddressCardProps> = ({ onUpdate, initialData }) => {
+  const { isOpen, openModal, closeModal } = useModal();
+  const { user } = useAuth0();
+  const userProfile = useUserProfileStore();
+  
+  const [formData, setFormData] = useState({
+    address: {
+      street: initialData.address?.street || '',
+      city: initialData.address?.city || '',
+      state: initialData.address?.state || '',
+      zipCode: initialData.address?.zipCode || '',
+      country: initialData.address?.country || ''
+    }
+  });
 
-const UserAddressCard = ({ metadata = { address: defaultAddress } as UserMetadata, onUpdate }: UserAddressCardProps) => {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editedAddress, setEditedAddress] = useState(metadata?.address || defaultAddress);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [saveResult, setSaveResult] = useState<string>('');
 
-  const handleEditClick = () => {
-    setEditedAddress(metadata?.address || defaultAddress);
-    setIsEditModalOpen(true);
+  useEffect(() => {
+    setFormData({
+      address: {
+        street: initialData.address?.street || '',
+        city: initialData.address?.city || '',
+        state: initialData.address?.state || '',
+        zipCode: initialData.address?.zipCode || '',
+        country: initialData.address?.country || ''
+      }
+    });
+  }, [initialData]);
+
+  const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      address: {
+        ...prev.address,
+        [field]: e.target.value
+      }
+    }));
   };
 
   const handleSave = async () => {
     try {
-      setIsLoading(true);
-      setError(null);
-
-      // Update parent component state
-      onUpdate({ address: editedAddress });
-      setIsEditModalOpen(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update address');
-      console.error('Error updating address:', err);
-    } finally {
-      setIsLoading(false);
+      if (!user?.sub) return;
+      onUpdate(formData);
+      const result = JSON.stringify(formData, null, 2);
+      console.log('Save result:', result); // Debug log
+      setSaveResult(result);
+      closeModal();
+    } catch (error) {
+      console.error('Error saving address info:', error);
+      setSaveResult(`Error: ${error}`);
     }
   };
 
   return (
     <>
-      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="text-lg font-semibold text-black dark:text-white">
+      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6 group">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <h3 className="font-medium text-black dark:text-white">
             Address Information
-          </h4>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEditClick}
-            startIcon={
+          </h3>
+        </div>
+        
+        <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
+            <div className="order-3 xl:order-2">
+                <h4 className="mb-4 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
+                  Address Overview
+                </h4>
+                <div className="flex flex-col md:flex-row w-full">
+                  <div className="w-full md:w-1/2 pr-0 md:pr-4">
+                    <div className="mb-3">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Street Address</span>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {formData.address.street || 'Not set'}
+                      </p>
+                    </div>
+                    <div className="mb-3">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">City</span>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {formData.address.city || 'Not set'}
+                      </p>
+                    </div>
+                    <div className="mb-3">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">State</span>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {formData.address.state || 'Not set'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-full md:w-1/2 pl-0 md:pl-4">
+                    <div className="mb-3">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">ZIP Code</span>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {formData.address.zipCode || 'Not set'}
+                      </p>
+                    </div>
+                    <div className="mb-3">
+                      <span className="font-medium text-gray-700 dark:text-gray-300">Country</span>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {formData.address.country || 'Not set'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button 
+              onClick={openModal} 
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
               <svg
                 className="fill-current"
                 width="16"
@@ -65,116 +140,91 @@ const UserAddressCard = ({ metadata = { address: defaultAddress } as UserMetadat
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  d="M13.8196 3.06667L12.9329 3.95333L11.0663 2.08667L11.9529 1.2C12.0996 1.05333 12.2796 0.98 12.4929 0.98C12.7063 0.98 12.8863 1.05333 13.0329 1.2L13.8196 1.98667C13.9663 2.13333 14.0396 2.31333 14.0396 2.52667C14.0396 2.74 13.9663 2.92 13.8196 3.06667ZM2.66626 10.4867L10.3996 2.75333L12.2663 4.62L4.53292 12.3533H2.66626V10.4867Z"
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206Z"
                   fill=""
                 />
               </svg>
-            }
-          >
-            Edit
-          </Button>
-        </div>
-        <div className="p-7">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">Street</span>
-              <span>{metadata?.address?.street || 'Not set'}</span>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">City</span>
-              <span>{metadata?.address?.city || 'Not set'}</span>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">State</span>
-              <span>{metadata?.address?.state || 'Not set'}</span>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">ZIP Code</span>
-              <span>{metadata?.address?.zipCode || 'Not set'}</span>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="font-medium text-black dark:text-white">Country</span>
-              <span>{metadata?.address?.country || 'Not set'}</span>
-            </div>
+              Edit
+            </button>
           </div>
         </div>
+
+        <Modal isOpen={isOpen} onClose={closeModal} className="!w-[33vw]">
+          <div className="p-6 bg-white rounded-lg dark:bg-gray-800">
+            <h2 className="text-xl font-semibold mb-4">Edit Address Information</h2>
+            <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <Label>Street Address</Label>
+                  <Input
+                    type="text"
+                    value={formData.address.street}
+                    onChange={handleInputChange('street')}
+                  />
+                </div>
+                <div>
+                  <Label>City</Label>
+                  <Input
+                    type="text"
+                    value={formData.address.city}
+                    onChange={handleInputChange('city')}
+                  />
+                </div>
+                <div>
+                  <Label>State</Label>
+                  <Input
+                    type="text"
+                    value={formData.address.state}
+                    onChange={handleInputChange('state')}
+                  />
+                </div>
+                <div>
+                  <Label>ZIP Code</Label>
+                  <Input
+                    type="text"
+                    value={formData.address.zipCode}
+                    onChange={handleInputChange('zipCode')}
+                  />
+                </div>
+                <div>
+                  <Label>Country</Label>
+                  <Input
+                    type="text"
+                    value={formData.address.country}
+                    onChange={handleInputChange('country')}
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-4">
+                <Button onClick={closeModal} variant="outline">
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </div>
+        </Modal>
       </div>
 
-      {/* Edit Modal */}
-      <Modal
-        isOpen={isEditModalOpen} className="!w-[50vw]"
-        onClose={() => setIsEditModalOpen(false)}
-      >
-        <div className="space-y-4 p-6">
-          <h2 className="text-xl font-semibold mb-4">Edit Address</h2>
-          {error && (
-            <div className="text-red-500 text-sm mb-4">
-              {error}
-            </div>
-          )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Street</label>
-            <input
-              type="text"
-              value={editedAddress.street}
-              onChange={(e) => setEditedAddress({ ...editedAddress, street: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            />
+      {/* Save Result Card - Separate from main address card */}
+      {saveResult && (
+        <div className="mt-4 rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
+          <div className="border-b border-stroke px-7 py-4 dark:border-strokedark">
+            {/* <h3 className="font-medium text-black dark:text-white">
+              Last Save Result
+            </h3> */}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">City</label>
-            <input
-              type="text"
-              value={editedAddress.city}
-              onChange={(e) => setEditedAddress({ ...editedAddress, city: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">State</label>
-            <input
-              type="text"
-              value={editedAddress.state}
-              onChange={(e) => setEditedAddress({ ...editedAddress, state: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">ZIP Code</label>
-            <input
-              type="text"
-              value={editedAddress.zipCode}
-              onChange={(e) => setEditedAddress({ ...editedAddress, zipCode: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Country</label>
-            <input
-              type="text"
-              value={editedAddress.country}
-              onChange={(e) => setEditedAddress({ ...editedAddress, country: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            />
-          </div>
-          <div className="mt-5 flex justify-end gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsEditModalOpen(false)}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="primary" 
-              onClick={handleSave}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
+          {/* <div className="p-7">
+            <pre className="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-auto max-h-60 text-sm whitespace-pre-wrap">
+              {saveResult}
+            </pre>
+          </div> */}
         </div>
-      </Modal>
+      )}
     </>
   );
 };

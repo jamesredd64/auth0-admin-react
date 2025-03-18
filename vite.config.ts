@@ -1,48 +1,15 @@
-import { defineConfig } from 'vite';
-import svgr from 'vite-plugin-svgr';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
   plugins: [
-    react({
-      jsxRuntime: 'automatic',
-      jsxImportSource: 'react',
-      babel: {
-        plugins: [
-          ['@babel/plugin-transform-react-jsx', { runtime: 'automatic' }]
-        ]
-      }
-    }),
+    react(),
     svgr({
       svgrOptions: {
-        exportType: 'default',
-        ref: true,
-        svgo: true,
-        titleProp: true,
-        jsxRuntime: 'automatic',
-        prettier: false,
-        svgoConfig: {
-          plugins: [
-            {
-              name: 'preset-default',
-              params: {
-                overrides: {
-                  removeViewBox: false
-                }
-              }
-            }
-          ]
-        }
-      }
-    })
+        icon: true,
+        exportType: "default",
+      },
+    }),
   ],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
-  }
 });

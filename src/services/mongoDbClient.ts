@@ -4,6 +4,8 @@ import { UserMetadata } from '../types/user';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const TIMEOUT = 5000; // 5 seconds timeout
 
 interface ApiError {
   message: string;
@@ -13,10 +15,11 @@ interface ApiError {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const useMongoDbClient = () => {
-  const { getAccessTokenSilently } = useAuth0();
+  const { getAccessTokenSilently, isAuthenticated, user } = useAuth0();
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
   const requestInProgress = useRef<boolean>(false);
+  const [userMetadata, setUserMetadata] = useState<UserMetadata | null>(null);
 
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessTokenSilently({
@@ -29,36 +32,38 @@ export const useMongoDbClient = () => {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
-  }, [getAccessTokenSilently]);
+  }, [getAccessTokenSilently]);  
 
-  const getUserById = async (userId: string) => {
+  const getUserById = useCallback(async (auth0Id: string) => {
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
-        method: 'GET',
-        headers
-      });
-
+      const response = await fetch(`${API_BASE}/users/${auth0Id}`, { headers });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result; // Return the full response which includes user data
     } catch (error) {
-      console.error('Error fetching user:', error);
-      throw error;
+      console.error('Error checking user existence:', error);
+      return null;  // Return null instead of throwing error
     }
-  };
+  }, [getAuthHeaders]);
 
-  // Add retry logic for failed requests
   const fetchWithRetry = async (url: string, options: RequestInit, retries = MAX_RETRIES) => {
     for (let i = 0; i < retries; i++) {
       try {
-        const response = await fetch(url, options);
+        // Remove the API_BASE from the url parameter since we're adding it here
+        const response = await fetch(`${API_BASE}${url}`, options);
+        
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Received non-JSON response from server");
+        }
+
         return await response.json();
       } catch (error) {
         if (i === retries - 1) throw error;
@@ -73,22 +78,28 @@ export const useMongoDbClient = () => {
     
     try {
       const headers = await getAuthHeaders();
-      const response = await fetchWithRetry(`/api/users/${userId}`, {
+      // Remove API_BASE from the URL since fetchWithRetry adds it
+      const response = await fetchWithRetry(`/users/${userId}`, {
         method: 'PUT',
-        headers,
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(userData)
       });
+
       return response;
     } catch (err) {
       const apiError: ApiError = {
         message: err instanceof Error ? err.message : 'An unknown error occurred',
+        status: err instanceof Error ? undefined : 500,
       };
       setError(apiError);
       throw apiError;
     } finally {
       setLoading(false);
     }
-  }, [getAccessTokenSilently]);
+  }, [getAuthHeaders]);
 
   const getUserByEmail = useCallback(async (email: string) => {
     setLoading(true);
@@ -96,37 +107,20 @@ export const useMongoDbClient = () => {
       setError(null);
       
       const headers = await getAuthHeaders();
-      const response = await fetchWithRetry(`/api/users/email/${email}`, { headers });
-      const data = await response.json();
-      return data;
-    } catch (err) {
-      const apiError: ApiError = {
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-      };
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, [getAuthHeaders, fetchWithRetry]);
-
-  const createUser = useCallback(async (userData: Partial<UserMetadata>) => {
-    setLoading(true);
-    try {
-      setError(null);
-      const headers = await getAuthHeaders();
-      const response = await fetch(`/api/users`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(userData)
-      });
+      const response = await fetch(`${API_BASE}/users/email/${email}`, { headers });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Received non-JSON response from server");
+      }
+
       return await response.json();
     } catch (err) {
+      console.error('Error in getUserByEmail:', err);
       const apiError: ApiError = {
         message: err instanceof Error ? err.message : 'An unknown error occurred',
       };
@@ -137,12 +131,129 @@ export const useMongoDbClient = () => {
     }
   }, [getAuthHeaders]);
 
-  return {
-    getUserById,
-    updateUser,
-    error,
-    loading,
-    getUserByEmail,
-    createUser
+  const createUser = useCallback(async (userData: Partial<UserMetadata>) => {
+    setLoading(true);
+    try {
+      setError(null);
+      const headers = await getAuthHeaders();
+      const response = await fetch(`${API_BASE}/users`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(userData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Received non-JSON response from server");
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error in createUser:', err);
+      const apiError: ApiError = {
+        message: err instanceof Error ? err.message : 'An unknown error occurred',
+      };
+      setError(apiError);
+      throw apiError;
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthHeaders]);
+
+  const checkAndInsertUser = useCallback(async (userId: string, initialData: Partial<UserMetadata>) => {
+    try {
+      // First try to get existing user
+      const existingUser = await getUserById(userId);
+      if (existingUser) {
+        return existingUser;
+      }
+
+      // If user doesn't exist, create new user
+      const newUserData = {
+        ...initialData,
+        auth0Id: userId,
+        email: user?.email || '',
+      };
+
+      const createdUser = await createUser(newUserData);
+      return createdUser;
+    } catch (error) {
+      console.error('Error in checkAndInsertUser:', error);
+      throw error;
+    }
+  }, [getUserById, createUser, user?.email]);
+
+  // const checkUserExists = useCallback(async (userId: string, initialData: Partial<UserMetadata>) => {
+  //   try {    
+      
+      
+  //     const existingUser = await getUserById(userId);
+  //     if (existingUser) {
+  //       setUserData(userDoc);
+  //       setCardsData(userDoc.cards);
+  //     } else {
+  //       // Initialize cards data with default values
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // }, [getUserById, createUser, user?.email]);     
+   
+  
+
+  const fetchWithTimeout = async (url: string, options: RequestInit) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), TIMEOUT);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(id);
+      return response;
+    } catch (error) {
+      clearTimeout(id);
+      throw error;
+    }
   };
+
+  const fetchUserData = useCallback(async (userId: string) => {
+    if (requestInProgress.current) return null;
+    
+    requestInProgress.current = true;
+    setLoading(true);
+    
+    try {
+      const headers = await getAuthHeaders();
+      console.log('Fetching user data for ID:', userId);
+      const response = await fetchWithTimeout(`${API_BASE}/users/${userId}`, {
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('MongoDB Response:', data); // Add this log
+      return data;
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setError({
+        message: error instanceof Error ? error.message : 'Failed to fetch user data',
+        status: error instanceof Response ? error.status : undefined
+      });
+      return null;
+    } finally {
+      setLoading(false);
+      requestInProgress.current = false;
+    }
+  }, [getAccessTokenSilently]);
+
+  return { fetchUserData, error, loading, updateUser, getUserById };
 };

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import React from "react";
 
 import { Link } from "react-router-dom";
 import { useSidebar } from "../context/SidebarContext";

@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useGlobalStorage } from "../hooks/useGlobalStorage";
 import Breadcrumb from "../components/common/PageBreadCrumb";
 import CoverOne from "../images/cover/cover-01.png";
-import { userService, UserProfile } from "../services/userService";
+import { useUserProfileStore } from "../stores/userProfileStore";
+import { useMongoDbClient } from "../services/mongoDbClient";
 import React from "react";
 
 interface UserMetadata {
@@ -27,32 +28,9 @@ const Profile = () => {
   const { user, isLoading, isAuthenticated } = useAuth0();
   const navigate = useNavigate();
   const [userMetadata] = useGlobalStorage<UserMetadata | null>('userMetadata', null);
-  const [mongoUser, setMongoUser] = useGlobalStorage<UserProfile | null>('mongoUser', null);
+  const userProfileStore = useUserProfileStore();
+  const mongoDbClient = useMongoDbClient();
   const [error, setError] = useState<string | null>(null);
-
-  const formatUserData = (userData: UserProfile): UserProfile => ({
-    email: userData.email,
-    firstName: userData.firstName || undefined,
-    lastName: userData.lastName || undefined,
-    phoneNumber: userData.phoneNumber || undefined,
-    profile: userData.profile ? {
-      profilePictureUrl: userData.profile.profilePictureUrl || undefined,
-      dateOfBirth: userData.profile.dateOfBirth ? new Date(userData.profile.dateOfBirth) : undefined,
-      gender: userData.profile.gender || undefined,
-      marketingBudget: userData.profile.marketingBudget ? {
-        amount: userData.profile.marketingBudget.amount || 0,
-        frequency: userData.profile.marketingBudget.frequency || 'monthly',
-        adCosts: userData.profile.marketingBudget.adCosts || 0
-      } : undefined
-    } : undefined,
-    address: userData.address ? {
-      street: userData.address.street || undefined,
-      city: userData.address.city || undefined,
-      state: userData.address.state || undefined,
-      zipCode: userData.address.zipCode || undefined,
-      country: userData.address.country || undefined
-    } : undefined
-  });
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -62,69 +40,32 @@ const Profile = () => {
   }, [isLoading, isAuthenticated, navigate]);
 
   useEffect(() => {
-    const fetchMongoUser = async () => {
-      if (!user?.email) return;
+    const initializeProfile = async () => {
+      if (!user?.email || !user?.sub) return;
       
       try {
-        const userData = await userService.getUserByEmail(user.email);
-        if (userData) {
-          setMongoUser(formatUserData({
-            email: userData.email,
-            firstName: userData.firstName || undefined,
-            lastName: userData.lastName || undefined,
-            phoneNumber: userData.phoneNumber || undefined,
-            profile: userData.profile ? {
-              profilePictureUrl: userData.profile.profilePictureUrl || undefined,
-              dateOfBirth: userData.profile.dateOfBirth ? new Date(userData.profile.dateOfBirth) : undefined,
-              gender: userData.profile.gender || undefined,
-              marketingBudget: userData.profile.marketingBudget ? {
-                amount: userData.profile.marketingBudget.amount || 0,
-                frequency: userData.profile.marketingBudget.frequency || 'monthly',
-                adCosts: userData.profile.marketingBudget.adCosts || 0
-              } : undefined
-            } : undefined,
-            address: userData.address ? {
-              street: userData.address.street || undefined,
-              city: userData.address.city || undefined,
-              state: userData.address.state || undefined,
-              zipCode: userData.address.zipCode || undefined,
-              country: userData.address.country || undefined
-            } : undefined
-          }));
-        } else {
-          // Create new user in MongoDB if they don't exist
-          const newUser = await userService.createUser({
+        // Try to get existing user
+        let mongoUser = await mongoDbClient.getUserByEmail(user.email);
+        
+        if (!mongoUser) {
+          // Create new user if they don't exist
+          mongoUser = await mongoDbClient.createUser({
+            auth0Id: user.sub,
             email: user.email,
-            firstName: user.given_name || undefined,
-            lastName: user.family_name || undefined,
+            firstName: user.given_name || '',
+            lastName: user.family_name || '',
             profile: {
-              profilePictureUrl: user.picture || undefined
+              profilePictureUrl: user.picture || ''
             }
           });
-          setMongoUser(formatUserData({
-            email: newUser.email,
-            firstName: newUser.firstName || undefined,
-            lastName: newUser.lastName || undefined,
-            phoneNumber: newUser.phoneNumber || undefined,
-            profile: newUser.profile ? {
-              profilePictureUrl: newUser.profile.profilePictureUrl || undefined,
-              dateOfBirth: newUser.profile.dateOfBirth ? new Date(newUser.profile.dateOfBirth) : undefined,
-              gender: newUser.profile.gender || undefined,
-              marketingBudget: newUser.profile.marketingBudget ? {
-                amount: newUser.profile.marketingBudget.amount || 0,
-                frequency: newUser.profile.marketingBudget.frequency || 'monthly',
-                adCosts: newUser.profile.marketingBudget.adCosts || 0
-              } : undefined
-            } : undefined,
-            address: newUser.address ? {
-              street: newUser.address.street || undefined,
-              city: newUser.address.city || undefined,
-              state: newUser.address.state || undefined,
-              zipCode: newUser.address.zipCode || undefined,
-              country: newUser.address.country || undefined
-            } : undefined
-          }));
         }
+
+        // Update Pinia store with user data
+        userProfileStore.setInitialProfile({
+          ...mongoUser,
+          auth0Id: user.sub
+        });
+        
         setError(null);
       } catch (error) {
         console.error('Error fetching MongoDB user:', error);
@@ -133,9 +74,9 @@ const Profile = () => {
     };
 
     if (user?.email) {
-      fetchMongoUser();
+      initializeProfile();
     }
-  }, [user, setMongoUser]);
+  }, [user]);
 
   if (isLoading) {
     return (

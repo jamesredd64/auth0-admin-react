@@ -1,161 +1,42 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth0 } from '@auth0/auth0-react';
+import { useUserProfileStore } from '../stores/userProfileStore';
 import UserMetaCard from '../components/UserProfile/UserMetaCard';
 import UserAddressCard from '../components/UserProfile/UserAddressCard';
-import UserInfoCard from '../components/UserProfile/UserInfoCard';
+import { UserInfoCard } from '../components/UserProfile/UserInfoCard';
 import UserMarketingCard from '../components/UserProfile/UserMarketingCard';
 import Button from '../components/ui/button/Button';
 import { Modal } from '../components/ui/modal';
-import { useAuth0 } from '@auth0/auth0-react';
-import { useMongoDbClient } from '../services/mongoDbClient';
 import { UserMetadata } from '../types/user';
+import { useMongoDbClient } from '../services/mongoDbClient';
 
 const UserProfiles = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth0();
-  const mongoDbapiClient = useMongoDbClient();
-  
-  const [userData, setUserData] = useState<UserMetadata | null>(null);
-  const [pendingChanges, setPendingChanges] = useState<Partial<UserMetadata>>({});
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const userProfile = useUserProfileStore();
+  const mongoDbClient = useMongoDbClient();
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [navigationPath, setNavigationPath] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Fetch user data function
-  const fetchUserData = async () => {
-    if (!user?.sub || !user?.email) return;
+  const handleUserDataUpdate = (updates: Partial<UserMetadata>) => {
+    userProfile.updateProfile(updates);
+  };
+
+  const handleSaveAll = async () => {
+    if (!user?.sub) return false;
     
     try {
-      setIsLoading(true);
-      setError(null);
-      
-      // First try to get user by auth0Id
-      try {
-        const data = await mongoDbapiClient.getUserById(user.sub);
-        if (data) {
-          setUserData(data);
-          return;
-        }
-      } catch (err) {
-        // Only log the error, don't throw yet
-        console.log('Failed to fetch by auth0Id:', err);
-      }
-
-      // If auth0Id lookup fails, try email
-      try {
-        const data = await mongoDbapiClient.getUserByEmail(user.email);
-        if (data) {
-          // Update the user with auth0Id if needed
-          if (!data.auth0Id) {
-            const updatedUser = await mongoDbapiClient.updateUser(data._id, {
-              auth0Id: user.sub
-            });
-            if (updatedUser.ok) {
-              setUserData(await updatedUser.json());
-            } else {
-              throw new Error('Failed to update auth0Id');
-            }
-          } else {
-            setUserData(data);
-          }
-          return;
-        }
-      } catch (err) {
-        console.log('Failed to fetch by email:', err);
-      }
-
-      // Only create a new user if both lookups fail
-      console.log('No existing user found, creating new user...');
-      const newUser = await mongoDbapiClient.createUser({
-        email: user.email,
-        auth0Id: user.sub,
-        firstName: user.given_name,
-        lastName: user.family_name,
-        profile: {
-          profilePictureUrl: user.picture
-        }
-      });
-      setUserData(newUser);
-
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load user data';
-      setError(errorMessage);
-      console.error('Error fetching user data:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initial data fetch when component mounts
-  if (!userData && !isLoading && !error && user?.sub) {
-    fetchUserData();
-  }
-
-  // Track changes from any card
-  const handleChange = (changes: Partial<UserMetadata>) => {
-    setPendingChanges(prev => ({
-      ...prev,
-      ...changes
-    }));
-    setHasUnsavedChanges(true);
-  };
-
-  // Save all changes
-  const handleSaveAll = async () => {
-    if (!user?.sub) {
-      setError('User ID not found');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const validFrequencies = ["daily", "monthly", "quarterly", "yearly"] as const;
-      const frequency = pendingChanges.profile?.marketingBudget?.frequency;
-
-      const transformedChanges = {
-        ...pendingChanges,
-        profile: pendingChanges.profile ? {
-          dateOfBirth: pendingChanges.profile.dateOfBirth ? new Date(pendingChanges.profile.dateOfBirth) : undefined,
-          gender: pendingChanges.profile.gender,
-          profilePictureUrl: pendingChanges.profile.profilePictureUrl,
-          marketingBudget: pendingChanges.profile.marketingBudget ? {
-            amount: pendingChanges.profile.marketingBudget.amount,
-            frequency: validFrequencies.includes(frequency as any) 
-              ? (frequency as "daily" | "monthly" | "quarterly" | "yearly")
-              : "monthly",
-            adCosts: pendingChanges.profile.marketingBudget.adCosts
-          } : undefined
-        } : undefined
-      };
-
-      const response = await mongoDbapiClient.updateUser(user.sub, transformedChanges);
-      
-      if (response.ok) {
-        setUserData(prev => ({
-          ...prev,
-          ...pendingChanges
-        } as UserMetadata));
-        setPendingChanges({});
-        setHasUnsavedChanges(false);
-      } else {
-        throw new Error('Failed to save changes');
-      }
+      const success = await userProfile.saveChanges(user.sub, mongoDbClient);
+      return success;
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error saving changes');
-      console.error('Error saving all changes:', error);
-    } finally {
-      setIsLoading(false);
+      console.error('Failed to save changes:', error);
+      return false;
     }
   };
 
-  // Handle navigation attempts
   const handleNavigation = (path: string) => {
-    if (hasUnsavedChanges) {
+    if (userProfile.hasUnsavedChanges) {
       setNavigationPath(path);
       setShowUnsavedModal(true);
     } else {
@@ -163,33 +44,50 @@ const UserProfiles = () => {
     }
   };
 
-  if (isLoading) {
+  const handleUnsavedModalConfirm = async () => {
+    if (await handleSaveAll()) {
+      setShowUnsavedModal(false);
+      if (navigationPath) {
+        navigate(navigationPath);
+      }
+    }
+  };
+
+  const handleUnsavedModalCancel = () => {
+    setShowUnsavedModal(false);
+    if (navigationPath) {
+      userProfile.resetChanges();
+      navigate(navigationPath);
+    }
+  };
+
+  if (userProfile.isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
-  if (error) {
-    return <div className="text-red-500 text-center p-4">{error}</div>;
-  }
+  const currentProfile = userProfile.currentProfile || {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    bio: '',
+    company: '',
+    position: '',
+    industry: ''
+  };
 
   return (
     <div className="mx-auto max-w-7xl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">User Profile</h1>
         <div className="flex gap-3">
-          <Button
-            onClick={fetchUserData}
-            className="bg-secondary text-white"
-            disabled={isLoading}
-          >
-            Refresh
-          </Button>
-          {hasUnsavedChanges && (
+          {userProfile.hasUnsavedChanges && (
             <Button
               onClick={handleSaveAll}
-              className="bg-primary text-white"
-              disabled={isLoading}
+              variant="primary"
+              disabled={userProfile.isLoading}
             >
-              {isLoading ? 'Saving...' : 'Save All Changes'}
+              {userProfile.isLoading ? 'Saving...' : 'Save All Changes'}
             </Button>
           )}
         </div>
@@ -197,20 +95,28 @@ const UserProfiles = () => {
 
       <div className="grid gap-6">
         <UserInfoCard
-          metadata={userData || {} as UserMetadata}
-          onUpdate={handleChange}
+          onUpdate={handleUserDataUpdate}
+          initialData={{
+            firstName: currentProfile.firstName,
+            lastName: currentProfile.lastName,
+            email: currentProfile.email,
+            phoneNumber: currentProfile.phoneNumber
+          }}
         />
         <UserMetaCard
-          metadata={userData || {} as UserMetadata}
-          onUpdate={handleChange}
+          onUpdate={handleUserDataUpdate}
+          initialData={{
+            bio: currentProfile.bio || '',
+            company: currentProfile.company || '',
+            position: currentProfile.position || '',
+            industry: currentProfile.industry || '',
+          }}
         />
         <UserAddressCard
-          metadata={userData || {} as UserMetadata}
-          onUpdate={handleChange}
+          onUpdate={handleUserDataUpdate}
         />
         <UserMarketingCard
-          metadata={userData || {} as UserMetadata}
-          onUpdate={handleChange}
+          onUpdate={handleUserDataUpdate}
         />
       </div>
 
@@ -223,20 +129,14 @@ const UserProfiles = () => {
           <p className="mb-4">You have unsaved changes. Would you like to save them before leaving?</p>
           <div className="flex justify-end gap-3">
             <Button
+              onClick={handleUnsavedModalCancel}
               variant="outline"
-              onClick={() => {
-                setShowUnsavedModal(false);
-                if (navigationPath) navigate(navigationPath);
-              }}
             >
               Discard Changes
             </Button>
             <Button
-              onClick={async () => {
-                await handleSaveAll();
-                setShowUnsavedModal(false);
-                if (navigationPath) navigate(navigationPath);
-              }}
+              onClick={handleUnsavedModalConfirm}
+              variant="primary"
             >
               Save Changes
             </Button>

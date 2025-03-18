@@ -54,8 +54,8 @@ import ChatIcon from "./chat.svg?react";
 import ChevronUpIcon from "./chevron-up.svg?react";
 
 export {
-  ErrorHexaIcon,
   AlertHexaIcon,
+  ErrorHexaIcon,
   MoreDotIcon,
   DownloadIcon,
   FileIcon,

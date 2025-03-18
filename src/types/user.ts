@@ -12,7 +12,12 @@ interface Profile {
 }
 
 export interface UserMetadata {
-  industry: ReactNode;
+  gender: string;
+  marketingBudget: any;
+  profilePictureUrl: string;
+  dateOfBirth: string;
+  userId: any;
+  industry: string;
   name: string;
   nickname: string;
   email: string;
@@ -35,6 +40,9 @@ export interface UserMetadata {
 
   // Profile related fields
   profile?: Profile;
+  bio?: string;
+  company?: string;
+  position?: string;
 
   // Address related fields
   address: {
@@ -43,6 +51,5 @@ export interface UserMetadata {
     state: string;
     zipCode: string;
     country: string;
-    taxId: string;
   };
 }
