@@ -13,7 +13,7 @@ export default function UserDropdown() {
 
   // Display name logic - use metadata first, fallback to Auth0 user info
   const displayName = userMetadata?.email || user?.email || user?.name || "User";
-  const profilePicture = userMetadata?.picture || user?.picture || "/images/user/default-avatar.png";
+  const profilePicture = user?.picture  || userMetadata?.profile.profilePictureUrl || "/icons/default-avatar.png";
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -23,14 +23,16 @@ export default function UserDropdown() {
     setIsOpen(false);
   }
 
-  const handleLogout = async () => {
+  const handleLogout = async (e: React.MouseEvent) => {
+    // Prevent event from bubbling up and closing dropdown prematurely
+    e.stopPropagation();
+    
     try {
       const idTokenClaims = await getIdTokenClaims();
       const idToken = idTokenClaims?.__raw;
 
       const domain = 'dev-uizu7j8qzflxzjpy.us.auth0.com';
       const clientId = 'XFt8FzJrPByvX5WFaBj9wMS2yFXTjji6';
-      // Use window.location.origin to make it work in all environments
       const returnTo = encodeURIComponent(`${window.location.origin}`);
 
       // Clear local storage
@@ -66,7 +68,8 @@ export default function UserDropdown() {
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
           <img 
             src={profilePicture} 
-            alt={displayName} 
+            alt="" 
+            aria-label={`Profile picture for ${displayName}`}
           />
         </span>
 
@@ -148,7 +151,7 @@ export default function UserDropdown() {
           </li>
         </ul>
         <button
-          onClick={handleLogout}
+          onClick={(e) => handleLogout(e)}
           className="flex items-center gap-3 px-3 py-4 font-medium text-red-600 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-red-700 dark:text-red-500 dark:hover:bg-white/5 dark:hover:text-red-400"
         >
           <svg

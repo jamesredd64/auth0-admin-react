@@ -23,6 +23,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           scope: 'openid profile email'
         }}
         cacheLocation="localstorage"
+        useRefreshTokens={false}
+        skipRedirectCallback={window.location.pathname === '/signed-out'}
       >
         <Provider store={store}>
           <ThemeProvider>

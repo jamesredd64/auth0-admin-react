@@ -32,7 +32,7 @@ export const useMongoDbClient = () => {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
-  }, [getAccessTokenSilently]);  
+  }, [getAccessTokenSilently]);
 
   const getUserById = useCallback(async (auth0Id: string) => {
     try {
@@ -164,45 +164,55 @@ export const useMongoDbClient = () => {
     }
   }, [getAuthHeaders]);
 
-  const checkAndInsertUser = useCallback(async (userId: string, initialData: Partial<UserMetadata>) => {
-    try {
-      // First try to get existing user
-      const existingUser = await getUserById(userId);
-      if (existingUser) {
-        return existingUser;
-      }
-
-      // If user doesn't exist, create new user
-      const newUserData = {
-        ...initialData,
-        auth0Id: userId,
-        email: user?.email || '',
-      };
-
-      const createdUser = await createUser(newUserData);
-      return createdUser;
-    } catch (error) {
-      console.error('Error in checkAndInsertUser:', error);
-      throw error;
-    }
-  }, [getUserById, createUser, user?.email]);
-
-  // const checkUserExists = useCallback(async (userId: string, initialData: Partial<UserMetadata>) => {
-  //   try {    
-      
-      
+  // const checkAndInsertUser = useCallback(async (userId: string, initialData: Partial<UserMetadata>) => {
+  //   try {
+  //     // First try to get existing user
   //     const existingUser = await getUserById(userId);
   //     if (existingUser) {
-  //       setUserData(userDoc);
-  //       setCardsData(userDoc.cards);
-  //     } else {
-  //       // Initialize cards data with default values
+  //       return existingUser;
   //     }
+
+  //     // If user doesn't exist, create new user
+  //     const newUserData = {
+  //       ...initialData,
+  //       auth0Id: userId,
+  //       email: user?.email || '',
+  //     };
+
+  //     const createdUser = await createUser(newUserData);
+  //     return createdUser;
   //   } catch (error) {
-  //     console.error(error);
+  //     console.error('Error in checkAndInsertUser:', error);
+  //     throw error;
   //   }
-  // }, [getUserById, createUser, user?.email]);     
-   
+  // }, [getUserById, createUser, user?.email]);
+  // ;       
+  
+  const checkAndInsertUser = useCallback(async (auth0Id: string) => {
+    try {
+      // Attempt to fetch the user by auth0Id
+      const existingUser = await getUserById(auth0Id);
+      if (existingUser) {
+        console.log("User found:", existingUser);
+        return existingUser;
+      }
+  
+      // If user doesn't exist, create a new one
+      const newUserData = {
+        auth0Id,
+        email: user?.email || '',
+        name: user?.name || '',
+      };
+  
+      const createdUser = await createUser(newUserData);
+      console.log("User created:", createdUser);
+      return createdUser;
+    } catch (error) {
+      console.error("Error in checkAndInsertUser:", error);
+      throw error;
+    }
+  }, [getUserById, createUser, user?.email, user?.name]);
+  
   
 
   const fetchWithTimeout = async (url: string, options: RequestInit) => {
@@ -255,5 +265,5 @@ export const useMongoDbClient = () => {
     }
   }, [getAccessTokenSilently]);
 
-  return { fetchUserData, error, loading, updateUser, getUserById };
+  return { fetchUserData, error, loading, updateUser, getUserById, checkAndInsertUser };
 };

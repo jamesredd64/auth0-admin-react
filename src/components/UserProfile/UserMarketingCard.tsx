@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { UserMetadata } from "../../types/user.js";
-import Button from "../ui/button/Button.js";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useUserProfileStore } from '../../stores/userProfileStore';
-import Input from "../form/input/InputField.js";
-import Label from "../form/Label.js";
+import Input from "../form/input/InputField";
+import Label from "../form/Label";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
+import { UserMetadata } from "../../types/user.js";
+
+interface MarketingBudget {
+  frequency: "daily" | "monthly" | "quarterly" | "yearly";
+  adBudget: number;
+  costPerAcquisition: number;
+  dailySpendingLimit: number;
+  marketingChannels: string;
+  monthlyBudget: number;
+  preferredPlatforms: string;
+  notificationPreferences: string[];
+  roiTarget: number;
+}
 
 interface UserMarketingCardProps {
   onUpdate: (newInfo: Partial<UserMetadata>) => void;
   initialData: {
-    marketingBudget: {
-      amount: number;
-      frequency: 'daily' | 'monthly' | 'quarterly' | 'yearly';
-      adCosts: number;
-    };
+    marketingBudget: MarketingBudget;
   };
 }
 
@@ -26,44 +33,50 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
   
   const [formData, setFormData] = useState({
     marketingBudget: {
-      amount: initialData.marketingBudget?.amount || 0,
-      frequency: initialData.marketingBudget?.frequency || 'monthly',
-      adCosts: initialData.marketingBudget?.adCosts || 0
+      ...initialData.marketingBudget,
+      // Ensure notificationPreferences is always an array
+      notificationPreferences: Array.isArray(initialData.marketingBudget.notificationPreferences) 
+        ? initialData.marketingBudget.notificationPreferences 
+        : []
     }
   });
 
   useEffect(() => {
     setFormData({
       marketingBudget: {
-        amount: initialData.marketingBudget?.amount || 0,
-        frequency: initialData.marketingBudget?.frequency || 'monthly',
-        adCosts: initialData.marketingBudget?.adCosts || 0
+        ...initialData.marketingBudget,
+        // Ensure notificationPreferences is always an array when updating from initialData
+        notificationPreferences: Array.isArray(initialData.marketingBudget.notificationPreferences)
+          ? initialData.marketingBudget.notificationPreferences
+          : []
       }
     });
   }, [initialData]);
 
-  const handleUpdate = (newData: Partial<UserMetadata>) => {
-    userProfile.setHasUnsavedChanges(true);
-    // ... rest of your update logic
-  };
-  
-  const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    // Set the form data
+  const handleInputChange = (field: keyof MarketingBudget) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setFormData(prev => ({
       marketingBudget: {
         ...prev.marketingBudget,
-        [field]: field === 'frequency' ? e.target.value : Number(e.target.value)
+        [field]: field === 'frequency' ? e.target.value : 
+                 field === 'notificationPreferences' ? e.target.value.split(',').filter(Boolean) :
+                 field === 'marketingChannels' || field === 'preferredPlatforms' ? e.target.value :
+                 Number(e.target.value)
       }
     }));
     
-    // Set global unsaved changes flag
     userProfile.setHasUnsavedChanges(true);
   };
 
   const handleSave = async () => {
     try {
       if (!user?.sub) return;
-      onUpdate(formData);
+      onUpdate({
+        profile: {
+          marketingBudget: formData.marketingBudget
+        }
+      });
       closeModal();
     } catch (error) {
       console.error('Error saving marketing info:', error);
@@ -79,26 +92,74 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
       </div>
       
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
-            <div className="order-3 xl:order-2">
-              <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
-                Marketing Budget 
-              </h4>
-              <p className="text-center text-gray-600 dark:text-gray-400 xl:text-left">
-                Budget Amount: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(formData.marketingBudget.amount)}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* First Column */}
+          <div className="space-y-4">
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Ad Budget</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(formData.marketingBudget.adBudget)}
               </p>
-              <p className="text-center text-gray-600 dark:text-gray-400 xl:text-left">
-                Frequency: {formData.marketingBudget.frequency}
+            </div>
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Cost Per Acquisition</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(formData.marketingBudget.costPerAcquisition)}
               </p>
-              <p className="text-center text-gray-600 dark:text-gray-400 xl:text-left">
-                Ad Costs: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(formData.marketingBudget.adCosts)}
+            </div>
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Daily Spending Limit</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(formData.marketingBudget.dailySpendingLimit)}
+              </p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Marketing Channels</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                {formData.marketingBudget.marketingChannels || 'Not set'}
+              </p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Monthly Budget</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(formData.marketingBudget.monthlyBudget)}
               </p>
             </div>
           </div>
+
+          {/* Second Column */}
+          <div className="space-y-4">
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Preferred Platforms</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                {formData.marketingBudget.preferredPlatforms || 'Not set'}
+              </p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Notification Preferences</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                {formData.marketingBudget.notificationPreferences.join(', ') || 'Not set'}
+              </p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">ROI Target</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                {new Intl.NumberFormat('en-US', { style: 'percent' }).format(formData.marketingBudget.roiTarget / 100)}
+              </p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Frequency</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                {formData.marketingBudget.frequency}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end">
           <button 
-            onClick={openModal} 
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            onClick={openModal}
+            className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           >
             <svg
               className="fill-current"
@@ -126,17 +187,98 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
           <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <Label>Budget Amount</Label>
+                <Label>Ad Budget</Label>
                 <Input
                   type="number"
-                  value={formData.marketingBudget.amount}
-                  onChange={handleInputChange('amount')}
+                  value={formData.marketingBudget.adBudget}
+                  onChange={handleInputChange('adBudget')}
                   step={0.01}
                   min="0"
                   placeholder="0.00"
                   className="pl-7"
                   prefix="$"
                   isCurrency={true}
+                />
+              </div>
+              <div>
+                <Label>Cost Per Acquisition</Label>
+                <Input
+                  type="number"
+                  value={formData.marketingBudget.costPerAcquisition}
+                  onChange={handleInputChange('costPerAcquisition')}
+                  step={0.01}
+                  min="0"
+                  placeholder="0.00"
+                  className="pl-7"
+                  prefix="$"
+                  isCurrency={true}
+                />
+              </div>
+              <div>
+                <Label>Daily Spending Limit</Label>
+                <Input
+                  type="number"
+                  value={formData.marketingBudget.dailySpendingLimit}
+                  onChange={handleInputChange('dailySpendingLimit')}
+                  step={0.01}
+                  min="0"
+                  placeholder="0.00"
+                  className="pl-7"
+                  prefix="$"
+                  isCurrency={true}
+                />
+              </div>
+              <div>
+                <Label>Monthly Budget</Label>
+                <Input
+                  type="number"
+                  value={formData.marketingBudget.monthlyBudget}
+                  onChange={handleInputChange('monthlyBudget')}
+                  step={0.01}
+                  min="0"
+                  placeholder="0.00"
+                  className="pl-7"
+                  prefix="$"
+                  isCurrency={true}
+                />
+              </div>
+              <div>
+                <Label>Marketing Channels</Label>
+                <Input
+                  type="text"
+                  value={formData.marketingBudget.marketingChannels}
+                  onChange={handleInputChange('marketingChannels')}
+                  placeholder="Enter marketing channels"
+                />
+              </div>
+              <div>
+                <Label>Preferred Platforms</Label>
+                <Input
+                  type="text"
+                  value={formData.marketingBudget.preferredPlatforms}
+                  onChange={handleInputChange('preferredPlatforms')}
+                  placeholder="Enter preferred platforms"
+                />
+              </div>
+              <div>
+                <Label>Notification Preferences</Label>
+                <Input
+                  type="text"
+                  value={formData.marketingBudget.notificationPreferences.join(',')}
+                  onChange={handleInputChange('notificationPreferences')}
+                  placeholder="Enter notification preferences (comma-separated)"
+                />
+              </div>
+              <div>
+                <Label>ROI Target (%)</Label>
+                <Input
+                  type="number"
+                  value={formData.marketingBudget.roiTarget}
+                  onChange={handleInputChange('roiTarget')}
+                  step={1}
+                  min="0"
+                  max="100"
+                  placeholder="0"
                 />
               </div>
               <div>
@@ -152,28 +294,21 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
                   <option value="yearly">Yearly</option>
                 </select>
               </div>
-              <div>
-                <Label>Ad Costs</Label>
-                <Input
-                  type="number"
-                  value={formData.marketingBudget.adCosts}
-                  onChange={handleInputChange('adCosts')}
-                  step={0.01}
-                  min="0"
-                  placeholder="0.00"
-                  className="pl-7"
-                  prefix="$"
-                  isCurrency={true}
-                />
-              </div>
             </div>
-            <div className="mt-6 flex justify-end gap-4">
-              <Button onClick={closeModal} variant="outline">
+            <div className="flex justify-end gap-4 mt-6">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
                 Cancel
-              </Button>
-              <Button type="submit">
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium text-white bg-brand-500 rounded-md hover:bg-brand-600"
+              >
                 Save Changes
-              </Button>
+              </button>
             </div>
           </form>
         </div>

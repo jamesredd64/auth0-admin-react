@@ -15,7 +15,8 @@
     "populate-db": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" node src/scripts/insertTestUsers.ts",
     "test:server": "ts-node src/scripts/testServerConnection.ts",
     "git": "scripts\\git-operations.cmd",
-    "test:user": "cd server && npm run test:user"
+    "test:user": "cd server && npm run test:user",
+    "recreate-db": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" node scripts/recreate-mongodb-schema.ts"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.3.0",
@@ -53,7 +54,8 @@
     "simplebar-react": "^3.3.0",
     "swiper": "^11.2.3",
     "tailwind-merge": "^3.0.1",
-    "uninstall": "^0.0.0"
+    "uninstall": "^0.0.0",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

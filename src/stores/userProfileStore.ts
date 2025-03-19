@@ -1,4 +1,5 @@
 
+import { create } from 'zustand';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { UserMetadata } from '../types/user';
 import { 
@@ -10,6 +11,11 @@ import {
   saveChanges 
 } from '../store/slices/userProfileSlice';
 import { useMongoDbClient } from '../services/mongoDbClient';
+
+interface UserProfileStore {
+  hasUnsavedChanges: boolean;
+  setHasUnsavedChanges: (value: boolean) => void;
+}
 
 export const useUserProfileStore = create<UserProfileStore>((set) => ({
   hasUnsavedChanges: false,

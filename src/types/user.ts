@@ -1,50 +1,25 @@
-interface MarketingBudget {
-  amount: number;
-  frequency: string;
-  adCosts: number;
-}
-
-interface Profile {
-  dateOfBirth?: Date;
-  gender?: string;
-  profilePictureUrl?: string;
-  marketingBudget?: MarketingBudget;
-}
-
 export interface UserMetadata {
-  gender: string;
-  marketingBudget: any;
-  profilePictureUrl: string;
-  dateOfBirth: string;
-  userId: any;
-  industry: string;
-  name: string;
-  nickname: string;
+  auth0Id: string;
   email: string;
-  picture: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  roles: string[];
-  auth0Id: string;
-  
-  // Marketing related fields
-  adBudget: number;
-  costPerAcquisition: number;
-  dailySpendingLimit: number;
-  marketingChannels: string;
-  monthlyBudget: number;
-  preferredPlatforms: string;
-  notificationPreferences: boolean;
-  roiTarget: number;
-
-  // Profile related fields
-  profile?: Profile;
-  bio?: string;
-  company?: string;
-  position?: string;
-
-  // Address related fields
+  profile: {
+    dateOfBirth?: Date;
+    gender?: string;
+    profilePictureUrl?: string;
+    marketingBudget: {
+      adBudget: number;
+      costPerAcquisition: number;
+      dailySpendingLimit: number;
+      marketingChannels: string;
+      monthlyBudget: number;
+      preferredPlatforms: string;
+      notificationPreferences: string[];
+      roiTarget: number;
+      frequency: "daily" | "monthly" | "quarterly" | "yearly";
+    };
+  };
   address: {
     street: string;
     city: string;
@@ -52,4 +27,7 @@ export interface UserMetadata {
     zipCode: string;
     country: string;
   };
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

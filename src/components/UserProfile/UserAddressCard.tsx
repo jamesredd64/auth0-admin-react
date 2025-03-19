@@ -76,60 +76,57 @@ export const UserAddressCard: React.FC<UserAddressCardProps> = ({ onUpdate, init
   return (
     <>
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6 group">
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <h3 className="font-medium text-black dark:text-white">
             Address Information
           </h3>
         </div>
         
         <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
-            <div className="order-3 xl:order-2">
-                <h4 className="mb-4 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
-                  Address Overview
-                </h4>
-                <div className="flex flex-col md:flex-row w-full">
-                  <div className="w-full md:w-1/2 pr-0 md:pr-4">
-                    <div className="mb-3">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Street Address</span>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {formData.address.street || 'Not set'}
-                      </p>
-                    </div>
-                    <div className="mb-3">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">City</span>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {formData.address.city || 'Not set'}
-                      </p>
-                    </div>
-                    <div className="mb-3">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">State</span>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {formData.address.state || 'Not set'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="w-full md:w-1/2 pl-0 md:pl-4">
-                    <div className="mb-3">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">ZIP Code</span>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {formData.address.zipCode || 'Not set'}
-                      </p>
-                    </div>
-                    <div className="mb-3">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">Country</span>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {formData.address.country || 'Not set'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* First Column */}
+            <div className="space-y-4">
+              <div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Street Address</span>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {formData.address.street || 'Not set'}
+                </p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">City</span>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {formData.address.city || 'Not set'}
+                </p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">State</span>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {formData.address.state || 'Not set'}
+                </p>
               </div>
             </div>
+
+            {/* Second Column */}
+            <div className="space-y-4">
+              <div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">ZIP Code</span>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {formData.address.zipCode || 'Not set'}
+                </p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700 dark:text-gray-300">Country</span>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {formData.address.country || 'Not set'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex justify-end">
             <button 
               onClick={openModal} 
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
             >
               <svg
                 className="fill-current"
@@ -151,7 +148,7 @@ export const UserAddressCard: React.FC<UserAddressCardProps> = ({ onUpdate, init
           </div>
         </div>
 
-        <Modal isOpen={isOpen} onClose={closeModal} className="!w-[33vw]">
+        <Modal isOpen={isOpen} onClose={closeModal}>
           <div className="p-6 bg-white rounded-lg dark:bg-gray-800">
             <h2 className="text-xl font-semibold mb-4">Edit Address Information</h2>
             <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>

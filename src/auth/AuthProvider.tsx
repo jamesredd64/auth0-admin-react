@@ -4,11 +4,16 @@ import React from 'react';
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <Auth0Provider
-      domain="https://dev-uizu7j8qzflxzjpy.us.auth0.com"
-      clientId="XFt8FzJrPByvX5WFaBj9wMS2yFXTjji6"
+      domain={import.meta.env.VITE_AUTH0_DOMAIN}
+      clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
       authorizationParams={{
         redirect_uri: window.location.origin,
+        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+        scope: 'openid profile email'
       }}
+      cacheLocation="localstorage"
+      useRefreshTokens={true}
+      skipRedirectCallback={window.location.pathname === '/signed-out'}
     >
       {children}
     </Auth0Provider>
