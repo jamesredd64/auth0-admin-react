@@ -46,6 +46,21 @@ interface UserData {
 const UserProfile = () => {
   const { user, isAuthenticated, isLoading: auth0Loading } = useAuth0();
   const { getUserById, updateUser } = useMongoDbClient();
+  
+  // Define default marketing budget
+  const defaultMarketingBudget = {
+    frequency: "monthly" as const,
+    adBudget: 0,
+    costPerAcquisition: 0,
+    dailySpendingLimit: 0,
+    marketingChannels: "",
+    monthlyBudget: 0,
+    preferredPlatforms: "",
+    notificationPreferences: [] as string[],
+    roiTarget: 0,
+  };
+
+  // Initialize state with default values
   const [userData, setUserData] = useState<UserData>({
     auth0Id: "",
     email: "",
@@ -56,17 +71,7 @@ const UserProfile = () => {
       dateOfBirth: undefined,
       gender: "",
       profilePictureUrl: "",
-      marketingBudget: {
-        frequency: "monthly",
-        adBudget: 0,
-        costPerAcquisition: 0,
-        dailySpendingLimit: 0,
-        marketingChannels: "",
-        monthlyBudget: 0,
-        preferredPlatforms: "",
-        notificationPreferences: [], // Changed from false to empty array
-        roiTarget: 0,
-      },
+      marketingBudget: defaultMarketingBudget,
     },
     address: {
       street: "",
@@ -76,13 +81,32 @@ const UserProfile = () => {
       country: "",
     },
     isActive: true,
-    
   });
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<{
     message: string;
     isError: boolean;
   } | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [initialUserData, setInitialUserData] = useState<UserData | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Add this useEffect to track changes
+  useEffect(() => {
+    if (isInitialLoad) {
+      console.log('Skipping change detection during initial load');
+      return;
+    }
+
+    const hasChanges = JSON.stringify(initialUserData) !== JSON.stringify(userData);
+    console.log('Checking for changes:', {
+      isInitialLoad,
+      initialData: initialUserData,
+      currentData: userData,
+      hasChanges
+    });
+    setHasUnsavedChanges(hasChanges);
+  }, [userData, initialUserData, isInitialLoad]);
 
   // Clear save status after 15 seconds
   useEffect(() => {
@@ -102,56 +126,40 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       if (isAuthenticated && user?.sub) {
-        setIsLoading(true);
         try {
-          const response = await getUserById(user.sub);
-          if (response) {
-            setUserData({
-              auth0Id: response.auth0Id || "",
-              email: response.email || "",
-              firstName: response.firstName || "",
-              lastName: response.lastName || "",
-              phoneNumber: response.phoneNumber || "",
-              profile: {
-                dateOfBirth: response.profile?.dateOfBirth,
-                gender: response.profile?.gender || "",
-                profilePictureUrl: response.profile?.profilePictureUrl || "",
-                marketingBudget: {
-                  
-                  frequency:
-                    response.profile?.marketingBudget?.frequency || "monthly",
-                  adBudget: response.profile?.marketingBudget?.adCosts || 0,
-                  costPerAcquisition:
-                    response.profile?.marketingBudget?.costPerAcquisition || 0,
-                  dailySpendingLimit:
-                    response.profile?.marketingBudget?.dailySpendingLimit || 0,
-                  marketingChannels:
-                    response.profile?.marketingBudget?.marketingChannels || '',
-                  monthlyBudget:
-                    response.profile?.marketingBudget?.monthlyBudget || 0,
-                  preferredPlatforms:
-                    response.profile?.marketingBudget?.preferredPlatforms || '',
-                  notificationPreferences:
-                    response.profile?.marketingBudget?.notificationPreferences || '',
-                  roiTarget: response.profile?.marketingBudget?.notificationPreferences || 0,
-                },
+          const fetchedUserData = await getUserById(user.sub);
+          // Ensure marketing budget data is properly structured
+          const marketingBudget = fetchedUserData?.profile?.marketingBudget || defaultMarketingBudget;
+          
+          setUserData({
+            ...fetchedUserData,
+            profile: {
+              ...fetchedUserData?.profile,
+              marketingBudget: {
+                ...defaultMarketingBudget,
+                ...marketingBudget,
               },
-              address: {
-                street: response.address?.street || "",
-                city: response.address?.city || "",
-                state: response.address?.state || "",
-                zipCode: response.address?.zipCode || "",
-                country: response.address?.country || "",
-              },
-              isActive: response.isActive ?? true,
-              createdAt: response.createdAt,
-              updatedAt: response.updatedAt,
-            });
-          }
+            },
+          });
+          
+          setInitialUserData(fetchedUserData);
+          console.log('Initial user data loaded:', fetchedUserData);
         } catch (error) {
-          console.error("Error fetching user data:", error);
+          console.error('Error fetching user data:', error);
+          // Set default data in case of error
+          setUserData(prevState => ({
+            ...prevState,
+            profile: {
+              ...prevState.profile,
+              marketingBudget: defaultMarketingBudget,
+            },
+          }));
         } finally {
           setIsLoading(false);
+          setTimeout(() => {
+            setIsInitialLoad(false);
+            setHasUnsavedChanges(false);
+          }, 500);
         }
       }
     };
@@ -159,33 +167,24 @@ const UserProfile = () => {
     fetchUserData();
   }, [isAuthenticated, user, getUserById]);
 
-  const handleUpdate = (updatedInfo: Partial<UserData>) => {
-    console.log("Handling update with:", updatedInfo);
-    setUserData((prevUserData) => {
-      const newData: UserData = {
-        ...prevUserData,
-        ...updatedInfo,
-        profile: {
-          ...prevUserData.profile,
-          ...(updatedInfo.profile || {}),
-        },
-        address: {
-          street: prevUserData.address?.street || "",
-          city: prevUserData.address?.city || "",
-          state: prevUserData.address?.state || "",
-          zipCode: prevUserData.address?.zipCode || "",
-          country: prevUserData.address?.country || "",
-          ...(updatedInfo.address || {}),
-        },
+  const handleUpdate = (updates: Partial<UserMetadata>) => {
+    console.log('handleUpdate called with:', updates);
+    setUserData((prevData) => {
+      const newData = {
+        ...prevData,
+        ...updates,
       };
+      console.log('Previous data:', prevData);
+      console.log('New data:', newData);
       return newData;
     });
   };
 
   const handleSubmit = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
+    console.log('handleSubmit triggered');
     try {
-      console.log("Saving user data:", userData);
+      console.log('Saving user data:', userData);
       const transformedData: Partial<UserMetadata> = {
         ...userData,
         address: userData.address
@@ -194,16 +193,25 @@ const UserProfile = () => {
             }
           : undefined,
       };
+      console.log('Transformed data for save:', transformedData);
       await updateUser(userData.auth0Id, transformedData);
+      setInitialUserData(userData); // Update initial data after successful save
+      setHasUnsavedChanges(false);
       setSaveStatus({ message: "Changes Saved Successfully", isError: false });
+      console.log('Save successful, changes reset');
     } catch (error) {
-      console.error("Error updating user data:", error);
+      console.error('Error updating user data:', error);
       setSaveStatus({
         message: "Something went wrong, please try again",
         isError: true,
       });
     }
   };
+
+  // Add loading state handling
+  if (isLoading || auth0Loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>
@@ -215,8 +223,11 @@ const UserProfile = () => {
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-800/50 lg:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6"></div>
         
-        {/* Centered Save All button */}
-        <div className="flex justify-center mb-6">
+        {/* Centered Save All button with logging */}
+        <div 
+          className={`${hasUnsavedChanges ? 'flex' : 'hidden'} justify-center mb-6`}
+          onClick={() => console.log('Save button container clicked, hasUnsavedChanges:', hasUnsavedChanges)}
+        >
           <button
             onClick={handleSubmit}
             className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
@@ -251,23 +262,31 @@ const UserProfile = () => {
             });
           }}
           initialData={{
-            email: userData.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            profilePictureUrl: userData.profile.profilePictureUrl || ""
+            email: userData?.email || "",
+            firstName: userData?.firstName || "",
+            lastName: userData?.lastName || "",
+            profilePictureUrl: userData?.profile?.profilePictureUrl || user?.picture || ""
           }}
         />
         <UserMarketingCard            
           onUpdate={(newInfo: Partial<UserMetadata>) => {
+            console.log('Marketing budget update received:', newInfo);
             handleUpdate({
               profile: {
                 ...userData.profile,
-                marketingBudget: newInfo.profile?.marketingBudget || userData.profile.marketingBudget
+                marketingBudget: {
+                  ...defaultMarketingBudget,
+                  ...userData.profile?.marketingBudget,
+                  ...newInfo.profile?.marketingBudget,
+                }
               }
             });
           }}
           initialData={{
-            marketingBudget: userData.profile.marketingBudget
+            marketingBudget: {
+              ...defaultMarketingBudget,
+              ...userData.profile?.marketingBudget,
+            }
           }}
         />
         <UserInfoCard

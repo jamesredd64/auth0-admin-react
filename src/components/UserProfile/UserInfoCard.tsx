@@ -30,26 +30,29 @@ export const UserInfoCard: React.FC<UserInfoCardProps> = ({ onUpdate, initialDat
     phoneNumber: initialData.phoneNumber || ''
   });
 
+  // Update local state when initialData changes
   useEffect(() => {
-    setFormData({
+    const newFormData = {
       firstName: initialData.firstName || '',
       lastName: initialData.lastName || '',
       email: initialData.email || '',
       phoneNumber: initialData.phoneNumber || ''
-    });
-  }, [initialData]);
+    };
+
+    // Only update if the data has actually changed
+    if (JSON.stringify(formData) !== JSON.stringify(newFormData)) {
+      setFormData(newFormData);
+    }
+  }, [initialData]); // Remove formData from dependencies
 
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       [field]: e.target.value
     }));
-  };
-  const handleUpdate = (newData: Partial<UserMetadata>) => {
     userProfile.setHasUnsavedChanges(true);
-    // ... rest of your update logic
   };
-  
+
   const handleSave = async () => {
     try {
       if (!user?.sub) return;

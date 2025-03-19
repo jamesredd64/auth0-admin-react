@@ -26,7 +26,6 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
   
   // Initialize local state with initialData
   const [formData, setFormData] = useState({
-    
     email: initialData.email || '',
     firstName: initialData.firstName || '',
     lastName: initialData.lastName || '',
@@ -35,14 +34,21 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
 
   // Update local state when initialData changes
   useEffect(() => {
-    setFormData({
-     
+    // Add check to prevent unnecessary updates
+    if (JSON.stringify(formData) !== JSON.stringify({
       email: initialData.email || '',
       firstName: initialData.firstName || '',
       lastName: initialData.lastName || '',
       profilePictureUrl: initialData.profilePictureUrl || user?.picture || ''
-    });
-  }, [initialData]);
+    })) {
+      setFormData({
+        email: initialData.email || '',
+        firstName: initialData.firstName || '',
+        lastName: initialData.lastName || '',
+        profilePictureUrl: initialData.profilePictureUrl || user?.picture || ''
+      });
+    }
+  }, [initialData, user?.picture]); // Remove formData from dependencies
 
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -54,11 +60,7 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
   const handleSave = async () => {
     try {
       if (!user?.sub) return;
-      
-      // Update through the store
       onUpdate(formData);
-      
-      // Close the modal
       closeModal();
     } catch (error) {
       console.error('Error saving meta info:', error);

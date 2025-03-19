@@ -12,10 +12,9 @@ export function useGlobalStorage<T>(key: string, initialValue: T) {
     }
   });
 
-  // Return memoized version of setter
+  // Memoize the setValue function to prevent unnecessary re-renders
   const setValue = useCallback((value: T | ((val: T) => T)) => {
     try {
-      // Allow value to be a function for previous state pattern
       const valueToStore = value instanceof Function ? value(storedValue) : value;
       setStoredValue(valueToStore);
       window.localStorage.setItem(key, JSON.stringify(valueToStore));

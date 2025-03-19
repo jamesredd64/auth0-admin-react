@@ -31,38 +31,58 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
   const { user } = useAuth0();
   const userProfile = useUserProfileStore();
   
+  // Initialize formData with initialData, ensuring all fields are properly typed
   const [formData, setFormData] = useState({
     marketingBudget: {
-      ...initialData.marketingBudget,
-      // Ensure notificationPreferences is always an array
+      frequency: initialData.marketingBudget.frequency || "monthly",
+      adBudget: Number(initialData.marketingBudget.adBudget) || 0,
+      costPerAcquisition: Number(initialData.marketingBudget.costPerAcquisition) || 0,
+      dailySpendingLimit: Number(initialData.marketingBudget.dailySpendingLimit) || 0,
+      marketingChannels: initialData.marketingBudget.marketingChannels || "",
+      monthlyBudget: Number(initialData.marketingBudget.monthlyBudget) || 0,
+      preferredPlatforms: initialData.marketingBudget.preferredPlatforms || "",
       notificationPreferences: Array.isArray(initialData.marketingBudget.notificationPreferences) 
         ? initialData.marketingBudget.notificationPreferences 
-        : []
+        : [],
+      roiTarget: Number(initialData.marketingBudget.roiTarget) || 0
     }
   });
 
+  // Update formData when initialData changes
   useEffect(() => {
-    setFormData({
+    const newFormData = {
       marketingBudget: {
-        ...initialData.marketingBudget,
-        // Ensure notificationPreferences is always an array when updating from initialData
+        frequency: initialData.marketingBudget.frequency || "monthly",
+        adBudget: Number(initialData.marketingBudget.adBudget) || 0,
+        costPerAcquisition: Number(initialData.marketingBudget.costPerAcquisition) || 0,
+        dailySpendingLimit: Number(initialData.marketingBudget.dailySpendingLimit) || 0,
+        marketingChannels: initialData.marketingBudget.marketingChannels || "",
+        monthlyBudget: Number(initialData.marketingBudget.monthlyBudget) || 0,
+        preferredPlatforms: initialData.marketingBudget.preferredPlatforms || "",
         notificationPreferences: Array.isArray(initialData.marketingBudget.notificationPreferences)
           ? initialData.marketingBudget.notificationPreferences
-          : []
+          : [],
+        roiTarget: Number(initialData.marketingBudget.roiTarget) || 0
       }
-    });
-  }, [initialData]);
+    };
+
+    // Only update if the data has actually changed
+    if (JSON.stringify(formData) !== JSON.stringify(newFormData)) {
+      setFormData(newFormData);
+    }
+  }, [initialData]); // Remove formData from dependencies
 
   const handleInputChange = (field: keyof MarketingBudget) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
+    const value = e.target.value;
     setFormData(prev => ({
       marketingBudget: {
         ...prev.marketingBudget,
-        [field]: field === 'frequency' ? e.target.value : 
-                 field === 'notificationPreferences' ? e.target.value.split(',').filter(Boolean) :
-                 field === 'marketingChannels' || field === 'preferredPlatforms' ? e.target.value :
-                 Number(e.target.value)
+        [field]: field === 'frequency' ? value :
+                 field === 'notificationPreferences' ? value.split(',').filter(Boolean) :
+                 field === 'marketingChannels' || field === 'preferredPlatforms' ? value :
+                 Number(value) || 0
       }
     }));
     
@@ -72,9 +92,12 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
   const handleSave = async () => {
     try {
       if (!user?.sub) return;
+      console.log('Saving marketing budget:', formData.marketingBudget);
       onUpdate({
         profile: {
-          marketingBudget: formData.marketingBudget
+          marketingBudget: {
+            ...formData.marketingBudget
+          }
         }
       });
       closeModal();

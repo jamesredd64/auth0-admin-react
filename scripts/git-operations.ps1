@@ -157,8 +157,17 @@ do {
             Write-Host "`n"
             Write-Host "Local unpushed commits on current branch:"
             Write-Host "----------------------------------------"
-            # Show unpushed commits
-            git log 'origin/HEAD..HEAD' --pretty=format:"%h %ad %an %s" --date=short
+            # Try different methods to show unpushed commits
+            $unpushedCommits = git log '@{u}..' --pretty=format:"%h %ad %an %s" --date=short 2>$null
+            if ($LASTEXITCODE -ne 0) {
+                $unpushedCommits = git log 'origin/main..HEAD' --pretty=format:"%h %ad %an %s" --date=short 2>$null
+            }
+            
+            if ($LASTEXITCODE -eq 0 -and $unpushedCommits) {
+                Write-Host $unpushedCommits
+            } else {
+                Write-Host "All commits are in sync with remote repository."
+            }
             
             Write-Host "`nTo roll back to any of these commits:"
             Write-Host "1. Copy the commit hash (first column)"

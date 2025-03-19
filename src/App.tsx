@@ -15,6 +15,7 @@ import SignedOut from "./pages/SignedOut";
 import Loader from './components/common/Loader';
 import { useMongoDbClient } from './services/mongoDbClient';
 import MongoInitializer from './components/MongoInitializer';
+import ErrorBoundary from './components/ErrorBoundary';
 
 interface UserMetadata {
   adBudget: number;
@@ -61,24 +62,30 @@ function App() {
   const { checkAndInsertUser } = useMongoDbClient();
   const initializationAttempted = useRef(false);
 
+  // Update profile picture only when user data changes
+  useEffect(() => {
+    if (user?.picture && userMetadata && userMetadata.profilePictureUrl !== user.picture) {
+      setUserMetadata({
+        ...userMetadata,
+        profilePictureUrl: user.picture
+      });
+    }
+  }, [user?.picture]); // Remove setUserMetadata and userMetadata from dependencies
+
   // Handle authentication state changes
   useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated) {
-        // Clear any existing user data
-        setUserMetadata(null);
-        navigate('/signed-out');
-      }
+    if (!isLoading && !isAuthenticated) {
+      setUserMetadata(null);
+      navigate('/signed-out');
     }
-  }, [isLoading, isAuthenticated, navigate, setUserMetadata]);
+  }, [isLoading, isAuthenticated, navigate]); // Remove setUserMetadata from dependencies
 
-  // Only attempt to initialize user data when authenticated
+  // Initialize user data
   useEffect(() => {
     const initializeUserData = async () => {
       if (!isAuthenticated || !user?.sub || initializationAttempted.current) {
         return;
       }
-
       initializationAttempted.current = true;
       try {
         const userData = await checkAndInsertUser(user.sub);
@@ -100,7 +107,7 @@ function App() {
             phoneNumber: userData.phoneNumber || '',
             dateOfBirth: userData.dateOfBirth || '',
             gender: userData.gender || '',
-            profilePictureUrl: userData.profilePictureUrl || '',
+            profilePictureUrl: user?.picture || '',
             marketingBudget: {
               amount: userData.marketingBudget?.amount || 0,
               frequency: userData.marketingBudget?.frequency || 'monthly',
@@ -124,7 +131,7 @@ function App() {
     if (isAuthenticated && user?.sub) {
       initializeUserData();
     }
-  }, [isAuthenticated, user, checkAndInsertUser, setUserMetadata]);
+  }, [isAuthenticated, user?.sub]); // Remove other dependencies that aren't strictly necessary
 
   if (isLoading) {
     return <Loader />;
@@ -143,7 +150,11 @@ function App() {
             {isAuthenticated ? (
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Home />} />
-                <Route path="/test" element={<TestPage />} />
+                <Route path="/test" element={
+                  <ErrorBoundary>
+                    <TestPage />
+                  </ErrorBoundary>
+                } />
                 <Route path="/lg" element={<TestP />} />
                 <Route path="/dashboard" element={<Home />} />
                 <Route path="/profile" element={<UserProfiles />} />
