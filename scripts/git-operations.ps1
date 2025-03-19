@@ -62,7 +62,37 @@ function Reset-Changes {
             $commitHash = Read-Host "Enter commit hash to reset to"
             $confirm = Read-Host "Reset to $commitHash? (y/n)"            
             if ($confirm -eq 'y') {
-                git reset --hard $commitHash            
+                # First check if there are uncommitted changes
+                $status = git status --porcelain
+                if ($status) {
+                    Write-Host "You have uncommitted changes. Please commit or stash them first."
+                    Write-Host "Would you like to:"
+                    Write-Host "1: Stash changes"
+                    Write-Host "2: Force reset (lose changes)"
+                    Write-Host "3: Cancel"
+                    $choice = Read-Host "Choose option"
+                    
+                    switch ($choice) {
+                        '1' {
+                            git stash
+                            git reset --hard $commitHash
+                            Write-Host "Changes stashed and reset to $commitHash. Use 'git stash pop' to recover changes."
+                        }
+                        '2' {
+                            git reset --hard $commitHash
+                            git clean -fd
+                            Write-Host "Force reset to $commitHash. All changes deleted."
+                        }
+                        default {
+                            Write-Host "Reset cancelled"
+                            return
+                        }
+                    }
+                } else {
+                    git reset --hard $commitHash
+                    git clean -fd
+                    Write-Host "Reset to $commitHash completed."
+                }
             }
         }    
     }

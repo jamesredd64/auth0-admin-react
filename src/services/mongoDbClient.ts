@@ -1,15 +1,21 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { UserMetadata } from '../types/user';
+import { API_CONFIG } from '../config/api.config';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const TIMEOUT = 5000; // 5 seconds timeout
 
 interface ApiError {
   message: string;
   status?: number;
+}
+
+interface UpdateUserData {
+  email: string;
+  name: string;
+  auth0Id: string;
 }
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -37,7 +43,7 @@ export const useMongoDbClient = () => {
   const getUserById = useCallback(async (auth0Id: string) => {
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(`${API_BASE}/users/${auth0Id}`, { headers });
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_BY_ID(auth0Id)}`, { headers });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -53,7 +59,7 @@ export const useMongoDbClient = () => {
     for (let i = 0; i < retries; i++) {
       try {
         // Remove the API_BASE from the url parameter since we're adding it here
-        const response = await fetch(`${API_BASE}${url}`, options);
+        const response = await fetch(`${API_CONFIG.BASE_URL}${url}`, options);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -72,34 +78,34 @@ export const useMongoDbClient = () => {
     }
   };
 
-  const updateUser = useCallback(async (userId: string, userData: Partial<UserMetadata>) => {
-    setLoading(true);
-    setError(null);
+  // const updateUser = useCallback(async (userId: string, userData: Partial<UserMetadata>) => {
+  //   setLoading(true);
+  //   setError(null);
     
-    try {
-      const headers = await getAuthHeaders();
-      // Remove API_BASE from the URL since fetchWithRetry adds it
-      const response = await fetchWithRetry(`/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData)
-      });
+  //   try {
+  //     const headers = await getAuthHeaders();
+  //     // Remove API_BASE from the URL since fetchWithRetry adds it
+  //     const response = await fetchWithRetry(`/users/${userId}`, {
+  //       method: 'PUT',
+  //       headers: {
+  //         ...headers,
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify(userData)
+  //     });
 
-      return response;
-    } catch (err) {
-      const apiError: ApiError = {
-        message: err instanceof Error ? err.message : 'An unknown error occurred',
-        status: err instanceof Error ? undefined : 500,
-      };
-      setError(apiError);
-      throw apiError;
-    } finally {
-      setLoading(false);
-    }
-  }, [getAuthHeaders]);
+  //     return response;
+  //   } catch (err) {
+  //     const apiError: ApiError = {
+  //       message: err instanceof Error ? err.message : 'An unknown error occurred',
+  //       status: err instanceof Error ? undefined : 500,
+  //     };
+  //     setError(apiError);
+  //     throw apiError;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [getAuthHeaders]);
 
   const getUserByEmail = useCallback(async (email: string) => {
     setLoading(true);
@@ -107,7 +113,7 @@ export const useMongoDbClient = () => {
       setError(null);
       
       const headers = await getAuthHeaders();
-      const response = await fetch(`${API_BASE}/users/email/${email}`, { headers });
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_BY_EMAIL(email)}`, { headers });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -136,7 +142,7 @@ export const useMongoDbClient = () => {
     try {
       setError(null);
       const headers = await getAuthHeaders();
-      const response = await fetch(`${API_BASE}/users`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS}`, {
         method: 'POST',
         headers,
         body: JSON.stringify(userData)
@@ -164,54 +170,154 @@ export const useMongoDbClient = () => {
     }
   }, [getAuthHeaders]);
 
-  // const checkAndInsertUser = useCallback(async (userId: string, initialData: Partial<UserMetadata>) => {
-  //   try {
-  //     // First try to get existing user
-  //     const existingUser = await getUserById(userId);
-  //     if (existingUser) {
-  //       return existingUser;
-  //     }
-
-  //     // If user doesn't exist, create new user
-  //     const newUserData = {
-  //       ...initialData,
-  //       auth0Id: userId,
-  //       email: user?.email || '',
-  //     };
-
-  //     const createdUser = await createUser(newUserData);
-  //     return createdUser;
-  //   } catch (error) {
-  //     console.error('Error in checkAndInsertUser:', error);
-  //     throw error;
-  //   }
-  // }, [getUserById, createUser, user?.email]);
-  // ;       
-  
-  const checkAndInsertUser = useCallback(async (auth0Id: string) => {
+  const checkAndInsertUser = async (auth0Id: string, userData: any) => {
     try {
-      // Attempt to fetch the user by auth0Id
-      const existingUser = await getUserById(auth0Id);
-      if (existingUser) {
-        console.log("User found:", existingUser);
-        return existingUser;
+      const headers = await getAuthHeaders();
+      console.log('Checking for existing user:', auth0Id);
+      console.log('API URL:', `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_BY_ID(auth0Id)}`);
+
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_BY_ID(auth0Id)}`, 
+        {
+          headers,
+          method: 'GET'
+        }
+      );
+
+      console.log('Response status:', response.status);
+
+      if (response.status === 404 || response.status === 204) {
+        console.log('User not found, creating new user');
+        const createResponse = await fetch(
+          `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USERS}`,
+          {
+            method: 'POST',
+            headers: {
+              ...headers,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...userData,
+              auth0Id
+            }),
+          }
+        );
+
+        if (!createResponse.ok) {
+          throw new Error(`Failed to create user. Status: ${createResponse.status}`);
+        }
+
+        return await createResponse.json();
       }
-  
-      // If user doesn't exist, create a new one
-      const newUserData = {
-        auth0Id,
-        email: user?.email || '',
-        name: user?.name || '',
-      };
-  
-      const createdUser = await createUser(newUserData);
-      console.log("User created:", createdUser);
-      return createdUser;
+
+      if (!response.ok) {
+        throw new Error(`Unexpected response status: ${response.status}`);
+      }
+
+      return await response.json();
     } catch (error) {
-      console.error("Error in checkAndInsertUser:", error);
+      console.error('Error in checkAndInsertUser:', error);
       throw error;
     }
-  }, [getUserById, createUser, user?.email, user?.name]);
+  };
+  
+  const updateUser = useCallback(async (auth0Id: string, userData: {
+    email: string;
+    name: string;
+  }) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('Attempting to update/create user:', userData);
+      const userDataWithAuth = {
+        ...userData,
+        auth0Id,
+      };
+      console.log('Sending data to server:', JSON.stringify(userDataWithAuth));
+      const updatedUser = await checkAndInsertUser(auth0Id, userDataWithAuth);
+      console.log('User successfully handled:', updatedUser);
+      return updatedUser;
+    } catch (err) {
+      console.error('Error handling user update/creation:', err);
+      const apiError: ApiError = {
+        message: err instanceof Error ? err.message : 'An unknown error occurred',
+        status: err instanceof Error ? undefined : 500,
+      };
+      setError(apiError);
+      throw apiError;
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthHeaders]);
+  
+  
+  // const checkAndInsertUser = async (auth0Id: string, userData: Partial<UserMetadata>) => {
+  //   // Fetch API to check if the user exists
+  //   const headers = await getAuthHeaders();
+  
+  //   const checkResponse = await fetch(`/users/${encodeURIComponent(auth0Id)}`, {
+  //     method: 'GET',
+  //     headers: {
+  //       ...headers,
+  //       'Content-Type': 'application/json',
+  //     },
+  //   });
+  
+  //   if (checkResponse.status === 200) {
+  //     // User exists, return the existing user data
+  //     const user = await checkResponse.json();
+  //     console.log('User exists:', user);
+  //     return user;
+  //   } else if (checkResponse.status === 404) {
+  //     // User does not exist, create a new one
+  //     console.log('User not found. Attempting to create a new user...');
+  
+  //     const createResponse = await fetch(`/users`, {
+  //       method: 'POST',
+  //       headers: {
+  //         ...headers,
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         auth0Id,
+  //         ...userData,
+  //       }),
+  //     });
+  
+  //     if (!createResponse.ok) {
+  //       throw new Error(`Failed to create user. Status: ${createResponse.status}`);
+  //     }
+  
+  //     const newUser = await createResponse.json();
+  //     console.log('User successfully created:', newUser);
+  //     return newUser;
+  //   } else {
+  //     throw new Error(`Unexpected status code: ${checkResponse.status}`);
+  //   }
+  // };
+  
+  // const updateUser = useCallback(async (auth0Id: string, userData: Partial<UserMetadata>) => {
+  //   setLoading(true);
+  //   setError(null);
+  
+  //   try {
+  //     // Call the function to check and insert/update the user
+  //     const updatedUser = await checkAndInsertUser(auth0Id, userData);
+  //     console.log('User successfully handled:', updatedUser);
+  //     return updatedUser;
+  //   } catch (err) {
+  //     console.error('Error handling user update/creation:', err);
+  //     const apiError: ApiError = {
+  //       message: err instanceof Error ? err.message : 'An unknown error occurred',
+  //       status: err instanceof Error ? undefined : 500,
+  //     };
+  //     setError(apiError);
+  //     throw apiError;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [getAuthHeaders]);
   
   
 
@@ -241,7 +347,7 @@ export const useMongoDbClient = () => {
     try {
       const headers = await getAuthHeaders();
       console.log('Fetching user data for ID:', userId);
-      const response = await fetchWithTimeout(`${API_BASE}/users/${userId}`, {
+      const response = await fetchWithTimeout(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_BY_ID(userId)}`, {
         headers
       });
 
