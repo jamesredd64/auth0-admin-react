@@ -1,14 +1,10 @@
-import mongoose from 'mongoose';
-import * as dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
-dotenv.config({ path: '../.env' });
-
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/your_database';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://jredd2013:Zeusyboy4ever!!@mern-cluster.oistpfp.mongodb.net/?retryWrites=true&w=majority';
 
 // Define the schemas
 const userSchema = new mongoose.Schema({
@@ -78,7 +74,10 @@ async function createIndexes() {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    // Drop existing collections if they exist
+    if (!mongoose.connection.db) {
+      throw new Error('Database connection not established');
+    }
+    
     const collections = await mongoose.connection.db.collections();
     for (let collection of collections) {
       await collection.drop();
@@ -116,3 +115,5 @@ async function createIndexes() {
 
 // Run the script
 createIndexes().catch(console.error);
+
+

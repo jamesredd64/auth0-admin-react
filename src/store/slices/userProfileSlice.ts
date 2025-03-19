@@ -24,9 +24,18 @@ const userProfileSlice = createSlice({
       state.pendingChanges = {};
     },
     updateProfile: (state, action: PayloadAction<Partial<UserMetadata>>) => {
+      // Properly merge nested objects
       state.pendingChanges = {
         ...state.pendingChanges,
         ...action.payload,
+        profile: {
+          ...(state.pendingChanges.profile || {}),
+          ...(action.payload.profile || {})
+        },
+        address: {
+          ...(state.pendingChanges.address || {}),
+          ...(action.payload.address || {})
+        }
       };
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -43,6 +52,14 @@ const userProfileSlice = createSlice({
         state.profile = {
           ...state.profile,
           ...state.pendingChanges,
+          profile: {
+            ...state.profile.profile,
+            ...(state.pendingChanges.profile || {})
+          },
+          address: {
+            ...state.profile.address,
+            ...(state.pendingChanges.address || {})
+          }
         };
         state.pendingChanges = {};
       }

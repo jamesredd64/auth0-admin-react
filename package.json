@@ -16,7 +16,7 @@
     "test:server": "ts-node src/scripts/testServerConnection.ts",
     "git": "scripts\\git-operations.cmd",
     "test:user": "cd server && npm run test:user",
-    "recreate-db": "cross-env NODE_OPTIONS=\"--loader ts-node/esm\" node scripts/recreate-mongodb-schema.ts"
+    "recreate-db": "ts-node scripts/recreate-mongodb-schema.ts"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.3.0",
