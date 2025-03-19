@@ -45,7 +45,7 @@ interface UserData {
 
 const UserProfile = () => {
   const { user, isAuthenticated, isLoading: auth0Loading } = useAuth0();
-  const { getUserById, updateUser } = useMongoDbClient();
+  const { getUserById, saveUserData } = useMongoDbClient();
   
   // Define default marketing budget
   const defaultMarketingBudget = {
@@ -182,25 +182,43 @@ const UserProfile = () => {
 
   const handleSubmit = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
-    console.log('handleSubmit triggered');
     try {
-      console.log('Saving user data:', userData);
       const transformedData: Partial<UserMetadata> = {
-        ...userData,
-        address: userData.address
-          ? {
-              ...userData.address,
-            }
-          : undefined,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phoneNumber: userData.phoneNumber,
+        profile: {
+          ...userData.profile,
+          dateOfBirth: userData.profile.dateOfBirth,
+          gender: userData.profile.gender,
+          profilePictureUrl: userData.profile.profilePictureUrl,
+          marketingBudget: {
+            frequency: userData.profile.marketingBudget.frequency,
+            adBudget: userData.profile.marketingBudget.adBudget,
+            costPerAcquisition: userData.profile.marketingBudget.costPerAcquisition,
+            dailySpendingLimit: userData.profile.marketingBudget.dailySpendingLimit,
+            marketingChannels: userData.profile.marketingBudget.marketingChannels,
+            monthlyBudget: userData.profile.marketingBudget.monthlyBudget,
+            preferredPlatforms: userData.profile.marketingBudget.preferredPlatforms,
+            notificationPreferences: userData.profile.marketingBudget.notificationPreferences,
+            roiTarget: userData.profile.marketingBudget.roiTarget
+          }
+        },
+        address: {
+          street: userData.address.street,
+          city: userData.address.city,
+          state: userData.address.state,
+          zipCode: userData.address.zipCode,
+          country: userData.address.country
+        },
+        isActive: userData.isActive
       };
-      console.log('Transformed data for save:', transformedData);
-      await updateUser(userData.auth0Id, transformedData);
-      setInitialUserData(userData); // Update initial data after successful save
-      setHasUnsavedChanges(false);
+      
+      await saveUserData(userData.auth0Id, transformedData);
       setSaveStatus({ message: "Changes Saved Successfully", isError: false });
-      console.log('Save successful, changes reset');
     } catch (error) {
-      console.error('Error updating user data:', error);
+      console.error("Error saving user data:", error);
       setSaveStatus({
         message: "Something went wrong, please try again",
         isError: true,

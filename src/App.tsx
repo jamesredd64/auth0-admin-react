@@ -5,16 +5,16 @@ import { useGlobalStorage } from './hooks/useGlobalStorage';
 import AppLayout from "./layout/AppLayout";
 import { useEffect, useRef } from 'react';
 import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/ProfilePage";
+// import UserProfiles from "./pages/ProfilePage";
 import Calendar from "./pages/Calendar";
 import Home from "./pages/Dashboard/Home";
-import TestP from "./pages/test";
-import TestPage from "./pages/TestPage";
+import Logout from "./pages/test";
+import UserProfile from "./pages/TestPage";
 import React from "react";
 import SignedOut from "./pages/SignedOut";
 import Loader from './components/common/Loader';
 import { useMongoDbClient } from './services/mongoDbClient';
-import MongoInitializer from './components/MongoInitializer';
+// import MongoInitializer from './components/MongoInitializer';
 import ErrorBoundary from './components/ErrorBoundary';
 
 interface UserMetadata {
@@ -153,14 +153,14 @@ function App() {
             {isAuthenticated ? (
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Home />} />
-                <Route path="/test" element={
+                {/* <Route path="/test" element={
                   <ErrorBoundary>
-                    <TestPage />
+                    <UserProfile />
                   </ErrorBoundary>
-                } />
-                <Route path="/lg" element={<TestP />} />
+                } /> */}
+                <Route path="/lg" element={<Logout />} />
                 <Route path="/dashboard" element={<Home />} />
-                <Route path="/profile" element={<UserProfiles />} />
+                <Route path="/profile" element={<UserProfile />} />
                 <Route path="/calendar" element={<Calendar />} />
                 <Route path="*" element={<NotFound />} />
               </Route>

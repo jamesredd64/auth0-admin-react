@@ -5,5 +5,10 @@ export const API_CONFIG = {
     USERS: '/users',
     USER_BY_ID: (id: string) => `/users/${encodeURIComponent(id)}`,
     USER_BY_EMAIL: (email: string) => `/users/email/${encodeURIComponent(email)}`,
+    SAVE_USER_DATA: (id: string) => `/users/${encodeURIComponent(id)}/save`,
+    HEALTH: '/health'
   }
-};
+} as const;
+
+// Add type definition
+export type ApiConfig = typeof API_CONFIG;

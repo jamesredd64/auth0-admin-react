@@ -3,6 +3,9 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { UserMetadata } from '../types/user';
 import { API_CONFIG } from '../config/api.config';
 
+// Add this console log at the top of your file to verify the import
+console.log('Imported API_CONFIG:', API_CONFIG);
+
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
 const TIMEOUT = 5000; // 5 seconds timeout
@@ -172,8 +175,10 @@ export const useMongoDbClient = () => {
 
   const checkAndInsertUser = async (auth0Id: string, userData: any) => {
     try {
+      console.log('userData:', userData);
       const headers = await getAuthHeaders();
       console.log('Checking for existing user:', auth0Id);
+      console.log('userData: ', userData);
       console.log('API URL:', `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER_BY_ID(auth0Id)}`);
 
       const response = await fetch(
@@ -319,7 +324,48 @@ export const useMongoDbClient = () => {
   //   }
   // }, [getAuthHeaders]);
   
-  
+  const saveUserData = useCallback(async (auth0Id: string, userData: Partial<UserMetadata>) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const headers = await getAuthHeaders();
+      
+      // Add these debug logs here
+      console.log('Save URL:', `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SAVE_USER_DATA(auth0Id)}`);
+      console.log('API_CONFIG:', API_CONFIG);
+      
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SAVE_USER_DATA(auth0Id)}`,
+        {
+          method: 'PUT',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData)
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to save user data. Status: ${response.status}`);
+      }
+
+      const updatedUser = await response.json();
+      console.log('User data saved successfully:', updatedUser);
+      return updatedUser;
+    } catch (err) {
+      console.error('Error saving user data:', err);
+      const apiError: ApiError = {
+        message: err instanceof Error ? err.message : 'An unknown error occurred',
+        status: err instanceof Error ? undefined : 500,
+      };
+      setError(apiError);
+      throw apiError;
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthHeaders]);
 
   const fetchWithTimeout = async (url: string, options: RequestInit) => {
     const controller = new AbortController();
@@ -371,5 +417,5 @@ export const useMongoDbClient = () => {
     }
   }, [getAccessTokenSilently]);
 
-  return { fetchUserData, error, loading, updateUser, getUserById, checkAndInsertUser };
+  return { fetchUserData, error, loading, updateUser, getUserById, checkAndInsertUser, saveUserData };
 };
