@@ -63,7 +63,8 @@ function App() {
       console.log('Current Profile Picture URL:', userMetadata.profilePictureUrl);
       setUserMetadata(prevState => prevState ? {
         ...prevState,
-        profilePictureUrl: user.picture || prevState.profilePictureUrl || ''
+        profilePictureUrl: user.picture || prevState.profilePictureUrl || '',
+         name: user.name || prevState.name || ''
       } : null);
     }
   }, [user?.picture]);
@@ -88,13 +89,14 @@ function App() {
       try {
         const userData = await updateUser(user.sub, {
           email: user?.email || '',
-          name: user?.name || `${user?.given_name || ''} ${user?.family_name || ''}`.trim(),
+          name: user?.name || '',          
           firstName: user?.given_name || '',
           lastName: user?.family_name || '',
+          // profilePictureUrl: user?.picture || '',
           // phoneNumber: '',
           // dateOfBirth: '',
           // gender: '',
-          // profilePictureUrl: user?.picture || '',
+          // 
           // adBudget: 0,
           // costPerAcquisition: 0,
           // dailySpendingLimit: 0,

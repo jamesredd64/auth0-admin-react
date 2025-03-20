@@ -7,6 +7,8 @@ import { EventInput, DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import { Modal } from "../components/ui/modal";
 import { useModal } from "../hooks/useModal";
 import PageMeta from "../components/common/PageMeta";
+import ChevronLeftIcon from '../icons/chevron-left.svg?react';
+import ChevronRightIcon from '../icons/chevron-right.svg?react';
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -138,11 +140,37 @@ const Calendar: React.FC = () => {
             eventClick={handleEventClick}
             eventContent={renderEventContent}
             customButtons={{
+              prev: {
+                icon: 'chevron-left',
+                click: function() {
+                  const calendar = calendarRef.current;
+                  if (calendar) {
+                    calendar.getApi().prev();
+                  }
+                }
+              },
+              next: {
+                icon: 'chevron-right',
+                click: function() {
+                  const calendar = calendarRef.current;
+                  if (calendar) {
+                    calendar.getApi().next();
+                  }
+                }
+              },
               addEventButton: {
                 text: "Add Event +",
-                click: openModal,
-              },
+                click: openModal
+              }
             }}
+            buttonIcons={{
+              prev: 'chevron-left',
+              next: 'chevron-right'
+            }}
+            buttonText={{
+              today: 'Today'
+            }}
+            bootstrapFontAwesome={false}
           />
         </div>
         <Modal
@@ -245,18 +273,18 @@ const Calendar: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <div className="mt-8 flex justify-end gap-4">
               <button
                 onClick={closeModal}
                 type="button"
-                className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+                className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-300"
               >
                 Close
               </button>
               <button
                 onClick={handleAddOrUpdateEvent}
                 type="button"
-                className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
+                className="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-gray-700 border border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-300"
               >
                 {selectedEvent ? "Update Changes" : "Add Event"}
               </button>
@@ -282,3 +310,8 @@ const renderEventContent = (eventInfo: any) => {
 };
 
 export default Calendar;
+
+
+
+
+

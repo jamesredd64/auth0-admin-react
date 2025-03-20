@@ -4,15 +4,17 @@ import { UserInfoCard } from "../components/UserProfile/UserInfoCard";
 import { UserMetaCard } from "../components/UserProfile/UserMetaCard";
 import { UserAddressCard } from "../components/UserProfile/UserAddressCard";
 import { UserMarketingCard } from "../components/UserProfile/UserMarketingCard";
-import { UserMetadata } from "../types/user";
+import  UserMetadata  from "../types/user";
 import { useMongoDbClient } from "../services/mongoDbClient";
 import PageMeta from "../components/common/PageMeta";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
+// import { useGlobalStorage } from '../hooks/useGlobalStorage';
 
 interface UserData {
   auth0Id: string;
   email: string;
   firstName: string;
+  name: string;
   lastName: string;
   phoneNumber: string;
   profile: {    
@@ -29,7 +31,7 @@ interface UserData {
     notificationPreferences: [];
     roiTarget: number;
     frequency: 'daily' | 'monthly' | 'quarterly' | 'yearly';
-    adCosts: number;
+    
   },  
   address: {
     street: string;
@@ -42,6 +44,7 @@ interface UserData {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
 
 const UserProfile = () => {
   const { user, isAuthenticated, isLoading: auth0Loading } = useAuth0();
@@ -66,6 +69,7 @@ const UserProfile = () => {
     email: "",
     firstName: "",
     lastName: "",
+    name: "",
     phoneNumber: "",
     profile: {      
       // gender: "",
@@ -82,7 +86,7 @@ const UserProfile = () => {
       notificationPreferences: [],
       roiTarget: 0,
       frequency: 'monthly' as const,
-      adCosts: 0
+      
     },
     address: {
       street: "",
@@ -149,16 +153,40 @@ const UserProfile = () => {
           
           setInitialUserData(fetchedUserData);
           console.log('Initial user data loaded:', fetchedUserData);
+          console.log('Auth0 user data loaded:', user.name);
         } catch (error) {
           console.error('Error fetching user data:', error);
           setUserData(prevState => ({
             ...prevState,
+            auth0Id: user?.sub || '',
+            email: user?.email || '',
+            firstName: user?.given_name || '',
+            name: user?.name || '',
+            lastName: user?.family_name || '',
+            phoneNumber: '',
+            profile: {
+              profilePictureUrl: user?.picture || '',
+            },
             marketingBudget: {
-              ...prevState.marketingBudget,
-              ...defaultMarketingBudget,
-              adCosts: prevState.marketingBudget.adCosts,
-              notificationPreferences: prevState.marketingBudget.notificationPreferences
-            }
+              adBudget: 0,
+              costPerAcquisition: 0,
+              dailySpendingLimit: 0,
+              marketingChannels: '',
+              monthlyBudget: 0,
+              preferredPlatforms: '',
+              notificationPreferences: [],
+              roiTarget: 0,
+              frequency: 'monthly' as const,
+              
+            },
+            address: {
+              street: '',
+              city: '',
+              state: '',
+              zipCode: '',
+              country: ''
+            },
+            isActive: true
           }));
         } finally {
           setIsLoading(false);
@@ -231,6 +259,7 @@ const UserProfile = () => {
       
       await saveUserData(userData.auth0Id, transformedData);
       setSaveStatus({ message: "Changes Saved Successfully", isError: false });
+      setHasUnsavedChanges(false);
     } catch (error) {
       console.error("Error saving user data:", error);
       setSaveStatus({
@@ -262,6 +291,7 @@ const UserProfile = () => {
             <button
               onClick={handleSubmit}
               className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+              disabled={!hasUnsavedChanges}
             >
               <svg
                 className="fill-current"
@@ -283,7 +313,7 @@ const UserProfile = () => {
           </div>
 
           {/* Save Status Message Container with fixed height */}
-          <div className="h-8 flex items-center justify-center">
+          <div className="h-1 flex items-center justify-center">
             {saveStatus && (
               <span
                 className={`text-center ${
@@ -309,6 +339,7 @@ const UserProfile = () => {
               email: userData?.email || "",
               firstName: userData?.firstName || "",
               lastName: userData?.lastName || "",
+              name: userData?.name || "",
               profilePictureUrl: user?.picture || userData?.profile.profilePictureUrl || ""
             }}
           />

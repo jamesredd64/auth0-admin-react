@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { UserMetadata } from "../../types/user.js";
+import  UserMetadata  from "../../types/user.js";
 import Button from "../ui/button/Button.js";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useUserProfileStore } from '../../stores/userProfileStore';

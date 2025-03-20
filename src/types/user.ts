@@ -1,8 +1,9 @@
-export interface UserMetadata {
+interface UserMetadata {
   auth0Id: string;
   email: string;
   firstName: string;
   lastName: string;
+  name: string;
   phoneNumber: string;
   profile: {    
     // gender?: string;
@@ -31,3 +32,5 @@ export interface UserMetadata {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export default UserMetadata;
