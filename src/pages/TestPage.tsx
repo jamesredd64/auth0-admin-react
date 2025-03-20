@@ -282,6 +282,18 @@ const UserProfile = () => {
             Save All Changes
           </button>
         </div>
+        {/* Save Status Message Container with fixed height */}
+        <div className="h-8 flex items-center justify-center">
+          {saveStatus && (
+            <span
+              className={`text-center ${
+                saveStatus.isError ? "text-red-500" : "text-green-500"
+              }`}
+            >
+              {saveStatus.message}
+            </span>
+          )}
+        </div>
         <UserMetaCard
           onUpdate={(newInfo: Partial<UserMetadata>) => {
             handleUpdate({
@@ -302,6 +314,35 @@ const UserProfile = () => {
             profilePictureUrl: user?.picture || userData?.profile.profilePictureUrl || ""
           }}
         />
+        <UserAddressCard
+          onUpdate={(newInfo: Partial<UserMetadata>) => {
+            handleUpdate({
+              address: {
+                ...userData.address,
+                ...newInfo.address,
+                street:
+                  newInfo.address?.street || userData.address?.street || "",
+                city: newInfo.address?.city || userData.address?.city || "",
+                state: newInfo.address?.state || userData.address?.state || "",
+                zipCode:
+                  newInfo.address?.zipCode || userData.address?.zipCode || "",
+                country:
+                  newInfo.address?.country || userData.address?.country || "",
+              },
+            });
+          }}
+          initialData={{
+            address: {
+              street: userData.address?.street || "",
+              city: userData.address?.city || "",
+              state: userData.address?.state || "",
+              zipCode: userData.address?.zipCode || "",
+              country: userData.address?.country || "",
+            },
+          }}
+        />
+
+        
         <UserMarketingCard            
           onUpdate={(newInfo: Partial<UserMetadata>) => {
             console.log('Marketing budget update received:', newInfo);
@@ -350,47 +391,6 @@ const UserProfile = () => {
             phoneNumber: userData.phoneNumber,
           }}
         /> */}
-        <UserAddressCard
-          onUpdate={(newInfo: Partial<UserMetadata>) => {
-            handleUpdate({
-              address: {
-                ...userData.address,
-                ...newInfo.address,
-                street:
-                  newInfo.address?.street || userData.address?.street || "",
-                city: newInfo.address?.city || userData.address?.city || "",
-                state: newInfo.address?.state || userData.address?.state || "",
-                zipCode:
-                  newInfo.address?.zipCode || userData.address?.zipCode || "",
-                country:
-                  newInfo.address?.country || userData.address?.country || "",
-              },
-            });
-          }}
-          initialData={{
-            address: {
-              street: userData.address?.street || "",
-              city: userData.address?.city || "",
-              state: userData.address?.state || "",
-              zipCode: userData.address?.zipCode || "",
-              country: userData.address?.country || "",
-            },
-          }}
-        />
-
-        {/* Save Status Message Container with fixed height */}
-        <div className="h-8 flex items-center justify-center">
-          {saveStatus && (
-            <span
-              className={`text-center ${
-                saveStatus.isError ? "text-red-500" : "text-green-500"
-              }`}
-            >
-              {saveStatus.message}
-            </span>
-          )}
-        </div>
-
         {/* Centered button container */}
         {/* <div className="flex justify-center mt-6">
           <button
