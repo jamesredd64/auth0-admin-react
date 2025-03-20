@@ -253,168 +253,92 @@ const UserProfile = () => {
       />
       <PageBreadcrumb pageTitle="Profile" />
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-800/50 lg:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6"></div>
-        
-        {/* Centered Save All button with logging */}
-        <div 
-          className={`${hasUnsavedChanges ? 'flex' : 'hidden'} justify-center mb-6`}
-          onClick={() => console.log('Save button container clicked, hasUnsavedChanges:', hasUnsavedChanges)}
-        >
-          <button
-            onClick={handleSubmit}
-            className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+        <div className="flex flex-col gap-5">
+          {/* Centered Save All button with logging */}
+          <div 
+            className={`${hasUnsavedChanges ? 'flex' : 'hidden'} justify-center`}
+            onClick={() => console.log('Save button container clicked, hasUnsavedChanges:', hasUnsavedChanges)}
           >
-            <svg
-              className="fill-current"
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+            <button
+              onClick={handleSubmit}
+              className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
             >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206Z"
-                fill=""
-              />
-            </svg>
-            Save All Changes
-          </button>
-        </div>
-        {/* Save Status Message Container with fixed height */}
-        <div className="h-8 flex items-center justify-center">
-          {saveStatus && (
-            <span
-              className={`text-center ${
-                saveStatus.isError ? "text-red-500" : "text-green-500"
-              }`}
-            >
-              {saveStatus.message}
-            </span>
-          )}
-        </div>
-        <UserMetaCard
-          onUpdate={(newInfo: Partial<UserMetadata>) => {
-            handleUpdate({
-              firstName: newInfo.firstName,
-              lastName: newInfo.lastName,
-              profile: {
-                // gender: userData.profile.gender,
-                profilePictureUrl:  user?.picture || userData?.profile.profilePictureUrl,
-              },
-              
-              
-            });
-          }}
-          initialData={{
-            email: userData?.email || "",
-            firstName: userData?.firstName || "",
-            lastName: userData?.lastName || "",
-            profilePictureUrl: user?.picture || userData?.profile.profilePictureUrl || ""
-          }}
-        />
-        <UserAddressCard
-          onUpdate={(newInfo: Partial<UserMetadata>) => {
-            handleUpdate({
-              address: {
-                ...userData.address,
-                ...newInfo.address,
-                street:
-                  newInfo.address?.street || userData.address?.street || "",
-                city: newInfo.address?.city || userData.address?.city || "",
-                state: newInfo.address?.state || userData.address?.state || "",
-                zipCode:
-                  newInfo.address?.zipCode || userData.address?.zipCode || "",
-                country:
-                  newInfo.address?.country || userData.address?.country || "",
-              },
-            });
-          }}
-          initialData={{
-            address: {
-              street: userData.address?.street || "",
-              city: userData.address?.city || "",
-              state: userData.address?.state || "",
-              zipCode: userData.address?.zipCode || "",
-              country: userData.address?.country || "",
-            },
-          }}
-        />
+              <svg
+                className="fill-current"
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206Z"
+                  fill=""
+                />
+              </svg>
+              Save All Changes
+            </button>
+          </div>
 
-        
-        <UserMarketingCard            
-          onUpdate={(newInfo: Partial<UserMetadata>) => {
-            console.log('Marketing budget update received:', newInfo);
-            handleUpdate({
+          {/* Save Status Message Container with fixed height */}
+          <div className="h-8 flex items-center justify-center">
+            {saveStatus && (
+              <span
+                className={`text-center ${
+                  saveStatus.isError ? "text-red-500" : "text-green-500"
+                }`}
+              >
+                {saveStatus.message}
+              </span>
+            )}
+          </div>
+
+          <UserMetaCard
+            onUpdate={(newInfo: Partial<UserMetadata>) => {
+              handleUpdate({
+                firstName: newInfo.firstName || userData.firstName || user?.name,
+                lastName: newInfo.lastName || userData.lastName,
+                profile: {
+                  profilePictureUrl: user?.picture || userData?.profile.profilePictureUrl,
+                },
+              });
+            }}
+            initialData={{
+              email: userData?.email || "",
+              firstName: userData?.firstName || "",
+              lastName: userData?.lastName || "",
+              profilePictureUrl: user?.picture || userData?.profile.profilePictureUrl || ""
+            }}
+          />
+
+          <UserAddressCard
+            onUpdate={handleUpdate}
+            initialData={{
+              address: userData?.address || {},
+            }}
+          />
+
+          <UserMarketingCard
+            onUpdate={handleUpdate}
+            initialData={{
               marketingBudget: {
-                ...userData.marketingBudget,
-                ...(newInfo.marketingBudget || {}),
-                // Ensure array handling for notificationPreferences
-                notificationPreferences: Array.isArray(newInfo.marketingBudget?.notificationPreferences)
-                  ? newInfo.marketingBudget.notificationPreferences
-                  : Array.isArray(userData.marketingBudget?.notificationPreferences)
-                    ? userData.marketingBudget.notificationPreferences
-                    : []
+                frequency: userData.marketingBudget?.frequency || 'monthly',                  
+                adBudget: userData.marketingBudget?.adBudget || 0,
+                costPerAcquisition: userData.marketingBudget?.costPerAcquisition || 0,
+                dailySpendingLimit: userData.marketingBudget?.dailySpendingLimit || 0,
+                marketingChannels: userData.marketingBudget?.marketingChannels || '',
+                monthlyBudget: userData.marketingBudget?.monthlyBudget || 0,
+                preferredPlatforms: userData.marketingBudget?.preferredPlatforms || '',
+                notificationPreferences: Array.isArray(userData.marketingBudget?.notificationPreferences) 
+                  ? userData.marketingBudget.notificationPreferences 
+                  : [],
+                roiTarget: userData.marketingBudget?.roiTarget || 0
               }
-            });
-          }}
-          initialData={{
-            marketingBudget: {
-              frequency: userData.marketingBudget?.frequency || 'monthly',                  
-              adBudget: userData.marketingBudget?.adBudget || 0,
-              costPerAcquisition: userData.marketingBudget?.costPerAcquisition || 0,
-              dailySpendingLimit: userData.marketingBudget?.dailySpendingLimit || 0,
-              marketingChannels: userData.marketingBudget?.marketingChannels || '',
-              monthlyBudget: userData.marketingBudget?.monthlyBudget || 0,
-              preferredPlatforms: userData.marketingBudget?.preferredPlatforms || '',
-              notificationPreferences: Array.isArray(userData.marketingBudget?.notificationPreferences) 
-                ? userData.marketingBudget.notificationPreferences 
-                : [],
-              roiTarget: userData.marketingBudget?.roiTarget || 0
-            }
-          }}
-        />
-        {/* <UserInfoCard
-          onUpdate={(newInfo: Partial<UserMetadata>) => {
-            handleUpdate({
-              firstName: newInfo.firstName,
-              lastName: newInfo.lastName,
-              email: newInfo.email,
-              phoneNumber: newInfo.phoneNumber,
-            });
-          }}
-          initialData={{
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            email: userData.email,
-            phoneNumber: userData.phoneNumber,
-          }}
-        /> */}
-        {/* Centered button container */}
-        {/* <div className="flex justify-center mt-6">
-          <button
-            onClick={handleSubmit}
-            className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
-          >
-            <svg
-              className="fill-current"
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206Z"
-                fill=""
-              />
-            </svg>
-            Save Changes
-          </button>
-        </div> */}
+            }}
+          />
+        </div>
       </div>
     </>
   );

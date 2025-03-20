@@ -76,7 +76,7 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
       </div>
       
       {/* Display Card Content */}
-      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+      
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
             <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
@@ -89,10 +89,11 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
               <p className="text-center text-gray-600 dark:text-gray-400 xl:text-left">
                 {formData.email}
               </p>
-              {/* {formData.roles && formData.roles.length > 0 && (
-                <p className="text-center text-gray-600 dark:text-gray-400 xl:text-left">
-                  Role: {formData.roles[0]}
-                </p> */}
+              <p className="text-gray-600 dark:text-gray-400">
+            {formData.firstName}, {formData.lastName}
+            <br />            
+          </p>
+              
             </div>
             <div className="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
               <div
@@ -190,7 +191,7 @@ export const UserMetaCard: React.FC<UserMetaCardProps> = ({ onUpdate, initialDat
             Edit
           </button> */}
         </div>
-      </div>
+      
 
       {/* Edit Modal */}
       <Modal isOpen={isOpen} onClose={closeModal} className="!w-[33vw]">

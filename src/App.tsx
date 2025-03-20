@@ -11,7 +11,7 @@ import Home from "./pages/Dashboard/Home";
 import Logout from "./pages/test";
 import UserProfile from "./pages/TestPage";
 import React from "react";
-import SignedOut from "./pages/SignedOut";
+import { SignedOut } from "./pages/SignedOut";
 import Loader from './components/common/Loader';
 import { useMongoDbClient } from './services/mongoDbClient';
 // import MongoInitializer from './components/MongoInitializer';

@@ -63,7 +63,7 @@ export const UserAddressCard: React.FC<UserAddressCardProps> = ({ onUpdate, init
     try {
       if (!user?.sub) return;
       onUpdate(formData);
-      setSaveResult('Address saved successfully');
+      // setSaveResult('Address saved successfully');
       closeModal();
     } catch (error) {
       console.error('Error saving address info:', error);
@@ -80,7 +80,7 @@ export const UserAddressCard: React.FC<UserAddressCardProps> = ({ onUpdate, init
           </h3>
           <button
             onClick={openModal}
-            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600"
+            className="flex items-center justify-center gap-1 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
           >
             Edit Address
           </button>

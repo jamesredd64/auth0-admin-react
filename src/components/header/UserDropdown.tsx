@@ -125,7 +125,7 @@ export default function UserDropdown() {
               Profile
             </DropdownItem>
           </li>
-          <li>
+          {/* <li>
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
@@ -148,7 +148,7 @@ export default function UserDropdown() {
               </svg>
               Settings
             </DropdownItem>
-          </li>
+          </li> */}
         </ul>
         <button
           onClick={(e) => handleLogout(e)}

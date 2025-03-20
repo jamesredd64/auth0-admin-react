@@ -38,7 +38,7 @@ const UserMetaEditForm = ({ isOpen, onClose, metadata, onSave }: UserMetaEditFor
             <input
               type="text"
               className="rounded-lg border border-gray-300 p-2 dark:border-gray-600 dark:bg-gray-700"
-              defaultValue={metadata.name}
+              defaultValue={metadata.firstName + " " + metadata.lastName}
             />
           </div>
           

@@ -126,9 +126,9 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
           Marketing Information
         </h3>
       </div>
-      
+       {/* changed from 2 to 3 cols below [md:grid-cols-3] */}
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* First Column */}
           <div className="space-y-4">
             <div>
@@ -143,12 +143,10 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
                 {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(formData.marketingBudget.costPerAcquisition)}
               </p>
             </div>
-            <div>
-              <span className="font-medium text-gray-700 dark:text-gray-300">Daily Spending Limit</span>
-              <p className="text-gray-600 dark:text-gray-400">
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(formData.marketingBudget.dailySpendingLimit)}
-              </p>
-            </div>
+          </div>
+
+          {/* Second Column */}
+          <div className="space-y-4">
             <div>
               <span className="font-medium text-gray-700 dark:text-gray-300">Marketing Channels</span>
               <p className="text-gray-600 dark:text-gray-400">
@@ -163,14 +161,8 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
             </div>
           </div>
 
-          {/* Second Column */}
+          {/* Third Column */}
           <div className="space-y-4">
-            <div>
-              <span className="font-medium text-gray-700 dark:text-gray-300">Preferred Platforms</span>
-              <p className="text-gray-600 dark:text-gray-400">
-                {formData.marketingBudget.preferredPlatforms || 'Not set'}
-              </p>
-            </div>
             <div>
               <span className="font-medium text-gray-700 dark:text-gray-300">Notification Preferences</span>
               <p className="text-gray-600 dark:text-gray-400">
@@ -183,37 +175,32 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
                 {new Intl.NumberFormat('en-US', { style: 'percent' }).format(formData.marketingBudget.roiTarget / 100)}
               </p>
             </div>
-            <div>
-              <span className="font-medium text-gray-700 dark:text-gray-300">Frequency</span>
-              <p className="text-gray-600 dark:text-gray-400">
-                {formData.marketingBudget.frequency}
-              </p>
-            </div>
           </div>
-        </div>
 
-        <div className="mt-6 flex justify-end">
-          <button 
-            onClick={openModal}
-            className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-          >
-            <svg
-              className="fill-current"
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+          {/* Fourth Column - Edit Button */}
+          <div className="flex items-center justify-center">
+            <button 
+              onClick={openModal}
+              className="flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 opacity-100 transition-opacity duration-200"
             >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206Z"
-                fill=""
-              />
-            </svg>
-            Edit
-          </button>
+              <svg
+                className="fill-current"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206Z"
+                  fill=""
+                />
+              </svg>
+              Edit
+            </button>
+          </div>
         </div>
       </div>
 
