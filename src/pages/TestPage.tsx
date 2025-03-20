@@ -15,22 +15,22 @@ interface UserData {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  profile: {
-    dateOfBirth?: Date;
-    gender?: string;
+  profile: {    
+    // gender?: string;
     profilePictureUrl?: string;
-    marketingBudget: {
-      adBudget: number;
-      costPerAcquisition: number;
-      dailySpendingLimit: number;
-      marketingChannels: string;
-      monthlyBudget: number;
-      preferredPlatforms: string;
-      notificationPreferences: string[];
-      roiTarget: number;
-      frequency: "daily" | "monthly" | "quarterly" | "yearly";
-    };
-  };
+  },
+  marketingBudget: {
+    adBudget: number;
+    costPerAcquisition: number;
+    dailySpendingLimit: number;
+    marketingChannels: string;
+    monthlyBudget: number;
+    preferredPlatforms: string;
+    notificationPreferences: [];
+    roiTarget: number;
+    frequency: 'daily' | 'monthly' | 'quarterly' | 'yearly';
+    adCosts: number;
+  },  
   address: {
     street: string;
     city: string;
@@ -49,15 +49,15 @@ const UserProfile = () => {
   
   // Define default marketing budget
   const defaultMarketingBudget = {
-    frequency: "monthly" as const,
     adBudget: 0,
     costPerAcquisition: 0,
     dailySpendingLimit: 0,
-    marketingChannels: "",
+    marketingChannels: '',
     monthlyBudget: 0,
-    preferredPlatforms: "",
-    notificationPreferences: [] as string[],
+    preferredPlatforms: '',
+    notificationPreferences:  [],
     roiTarget: 0,
+    frequency: "monthly" as const
   };
 
   // Initialize state with default values
@@ -67,20 +67,31 @@ const UserProfile = () => {
     firstName: "",
     lastName: "",
     phoneNumber: "",
-    profile: {
-      dateOfBirth: undefined,
-      gender: "",
+    profile: {      
+      // gender: "",
       profilePictureUrl: "",
-      marketingBudget: defaultMarketingBudget,
+    },
+    marketingBudget: {
+      ...defaultMarketingBudget,
+      adBudget: 0,
+      costPerAcquisition: 0,
+      dailySpendingLimit: 0,
+      marketingChannels: '',
+      monthlyBudget: 0,
+      preferredPlatforms: '',
+      notificationPreferences: [],
+      roiTarget: 0,
+      frequency: 'monthly' as const,
+      adCosts: 0
     },
     address: {
       street: "",
       city: "",
       state: "",
       zipCode: "",
-      country: "",
+      country: ""
     },
-    isActive: true,
+    isActive: true
   });
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<{
@@ -128,17 +139,11 @@ const UserProfile = () => {
       if (isAuthenticated && user?.sub) {
         try {
           const fetchedUserData = await getUserById(user.sub);
-          // Ensure marketing budget data is properly structured
-          const marketingBudget = fetchedUserData?.profile?.marketingBudget || defaultMarketingBudget;
-          
           setUserData({
             ...fetchedUserData,
-            profile: {
-              ...fetchedUserData?.profile,
-              marketingBudget: {
-                ...defaultMarketingBudget,
-                ...marketingBudget,
-              },
+            marketingBudget: {
+              ...defaultMarketingBudget,
+              ...fetchedUserData?.marketingBudget,
             },
           });
           
@@ -146,13 +151,14 @@ const UserProfile = () => {
           console.log('Initial user data loaded:', fetchedUserData);
         } catch (error) {
           console.error('Error fetching user data:', error);
-          // Set default data in case of error
           setUserData(prevState => ({
             ...prevState,
-            profile: {
-              ...prevState.profile,
-              marketingBudget: defaultMarketingBudget,
-            },
+            marketingBudget: {
+              ...prevState.marketingBudget,
+              ...defaultMarketingBudget,
+              adCosts: prevState.marketingBudget.adCosts,
+              notificationPreferences: prevState.marketingBudget.notificationPreferences
+            }
           }));
         } finally {
           setIsLoading(false);
@@ -169,11 +175,19 @@ const UserProfile = () => {
 
   const handleUpdate = (updates: Partial<UserMetadata>) => {
     console.log('handleUpdate called with:', updates);
-    setUserData((prevData) => {
-      const newData = {
-        ...prevData,
+    setUserData((prevData: UserData) => {
+      const processedUpdates: Partial<UserMetadata> = {
         ...updates,
+        profile: updates.profile ? {
+          ...updates.profile
+        } : updates.profile
       };
+
+      const newData: UserData = {
+        ...prevData,
+        ...processedUpdates as UserData
+      };
+      
       console.log('Previous data:', prevData);
       console.log('New data:', newData);
       return newData;
@@ -184,36 +198,36 @@ const UserProfile = () => {
     event.preventDefault();
     try {
       const transformedData: Partial<UserMetadata> = {
+        auth0Id: userData.auth0Id,
         email: userData.email,
         firstName: userData.firstName,
         lastName: userData.lastName,
         phoneNumber: userData.phoneNumber,
-        profile: {
-          ...userData.profile,
-          dateOfBirth: userData.profile.dateOfBirth,
-          gender: userData.profile.gender,
-          profilePictureUrl: userData.profile.profilePictureUrl,
-          marketingBudget: {
-            frequency: userData.profile.marketingBudget.frequency,
-            adBudget: userData.profile.marketingBudget.adBudget,
-            costPerAcquisition: userData.profile.marketingBudget.costPerAcquisition,
-            dailySpendingLimit: userData.profile.marketingBudget.dailySpendingLimit,
-            marketingChannels: userData.profile.marketingBudget.marketingChannels,
-            monthlyBudget: userData.profile.marketingBudget.monthlyBudget,
-            preferredPlatforms: userData.profile.marketingBudget.preferredPlatforms,
-            notificationPreferences: userData.profile.marketingBudget.notificationPreferences,
-            roiTarget: userData.profile.marketingBudget.roiTarget
-          }
+        profile: {          
+          // gender: userData.profile.gender,
+          profilePictureUrl:  user?.picture || userData?.profile.profilePictureUrl,    
         },
-        address: {
-          street: userData.address.street,
-          city: userData.address.city,
-          state: userData.address.state,
-          zipCode: userData.address.zipCode,
-          country: userData.address.country
+        marketingBudget: {
+          adBudget: userData.marketingBudget.adBudget || 0,
+          costPerAcquisition: userData.marketingBudget.costPerAcquisition || 0,
+          dailySpendingLimit: userData.marketingBudget.dailySpendingLimit || 0,
+          marketingChannels: userData.marketingBudget.marketingChannels || "",
+          monthlyBudget: userData.marketingBudget.monthlyBudget || 0,
+          preferredPlatforms: userData.marketingBudget.preferredPlatforms  || "",
+          notificationPreferences: userData.marketingBudget.notificationPreferences  || "",
+          roiTarget: userData.marketingBudget.roiTarget || 0,
+          frequency: userData.marketingBudget.frequency|| 0,
+          // "daily" | "monthly" | "quarterly" | "yearly";
         },
-        isActive: userData.isActive
-      };
+         address: {
+          street: userData.address.street || "",
+          city: userData.address.city || "",
+          state: userData.address.state || "",
+          zipCode: userData.address.zipCode || "",
+          country: userData.address.country || ""
+        },
+        isActive: userData.isActive,
+      };      
       
       await saveUserData(userData.auth0Id, transformedData);
       setSaveStatus({ message: "Changes Saved Successfully", isError: false });
@@ -274,40 +288,53 @@ const UserProfile = () => {
               firstName: newInfo.firstName,
               lastName: newInfo.lastName,
               profile: {
-                ...userData.profile,
-                profilePictureUrl: newInfo.profile?.profilePictureUrl
-              }
+                // gender: userData.profile.gender,
+                profilePictureUrl:  user?.picture || userData?.profile.profilePictureUrl,
+              },
+              
+              
             });
           }}
           initialData={{
             email: userData?.email || "",
             firstName: userData?.firstName || "",
             lastName: userData?.lastName || "",
-            profilePictureUrl: userData?.profile?.profilePictureUrl || user?.picture || ""
+            profilePictureUrl: user?.picture || userData?.profile.profilePictureUrl || ""
           }}
         />
         <UserMarketingCard            
           onUpdate={(newInfo: Partial<UserMetadata>) => {
             console.log('Marketing budget update received:', newInfo);
             handleUpdate({
-              profile: {
-                ...userData.profile,
-                marketingBudget: {
-                  ...defaultMarketingBudget,
-                  ...userData.profile?.marketingBudget,
-                  ...newInfo.profile?.marketingBudget,
-                }
+              marketingBudget: {
+                ...userData.marketingBudget,
+                ...(newInfo.marketingBudget || {}),
+                // Ensure array handling for notificationPreferences
+                notificationPreferences: Array.isArray(newInfo.marketingBudget?.notificationPreferences)
+                  ? newInfo.marketingBudget.notificationPreferences
+                  : Array.isArray(userData.marketingBudget?.notificationPreferences)
+                    ? userData.marketingBudget.notificationPreferences
+                    : []
               }
             });
           }}
           initialData={{
             marketingBudget: {
-              ...defaultMarketingBudget,
-              ...userData.profile?.marketingBudget,
+              frequency: userData.marketingBudget?.frequency || 'monthly',                  
+              adBudget: userData.marketingBudget?.adBudget || 0,
+              costPerAcquisition: userData.marketingBudget?.costPerAcquisition || 0,
+              dailySpendingLimit: userData.marketingBudget?.dailySpendingLimit || 0,
+              marketingChannels: userData.marketingBudget?.marketingChannels || '',
+              monthlyBudget: userData.marketingBudget?.monthlyBudget || 0,
+              preferredPlatforms: userData.marketingBudget?.preferredPlatforms || '',
+              notificationPreferences: Array.isArray(userData.marketingBudget?.notificationPreferences) 
+                ? userData.marketingBudget.notificationPreferences 
+                : [],
+              roiTarget: userData.marketingBudget?.roiTarget || 0
             }
           }}
         />
-        <UserInfoCard
+        {/* <UserInfoCard
           onUpdate={(newInfo: Partial<UserMetadata>) => {
             handleUpdate({
               firstName: newInfo.firstName,
@@ -322,7 +349,7 @@ const UserProfile = () => {
             email: userData.email,
             phoneNumber: userData.phoneNumber,
           }}
-        />
+        /> */}
         <UserAddressCard
           onUpdate={(newInfo: Partial<UserMetadata>) => {
             handleUpdate({

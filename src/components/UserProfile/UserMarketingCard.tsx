@@ -79,10 +79,25 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
     setFormData(prev => ({
       marketingBudget: {
         ...prev.marketingBudget,
-        [field]: field === 'frequency' ? value :
-                 field === 'notificationPreferences' ? value.split(',').filter(Boolean) :
-                 field === 'marketingChannels' || field === 'preferredPlatforms' ? value :
-                 Number(value) || 0
+        [field]: 
+          // Handle string array for notification preferences
+          field === 'notificationPreferences' ? 
+            (typeof value === 'string' ? value.split(',').map(v => v.trim()).filter(Boolean) : []) :
+          // Handle string fields
+          field === 'marketingChannels' || field === 'preferredPlatforms' ? 
+            value :
+          // Handle frequency enum
+          field === 'frequency' ? 
+            value :
+          // Handle numeric fields with proper conversion
+          field === 'adBudget' || 
+          field === 'costPerAcquisition' || 
+          field === 'dailySpendingLimit' || 
+          field === 'monthlyBudget' || 
+          field === 'roiTarget' ? 
+            Number(value) || 0 :
+          // Default fallback
+          value
       }
     }));
     
@@ -94,10 +109,8 @@ export const UserMarketingCard: React.FC<UserMarketingCardProps> = ({ onUpdate, 
       if (!user?.sub) return;
       console.log('Saving marketing budget:', formData.marketingBudget);
       onUpdate({
-        profile: {
-          marketingBudget: {
-            ...formData.marketingBudget
-          }
+        marketingBudget: {
+          ...formData.marketingBudget
         }
       });
       closeModal();

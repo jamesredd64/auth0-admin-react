@@ -229,6 +229,8 @@ export const useMongoDbClient = () => {
   const updateUser = useCallback(async (auth0Id: string, userData: {
     email: string;
     name: string;
+    firstName: string;
+    lastName: string;
   }) => {
     setLoading(true);
     setError(null);

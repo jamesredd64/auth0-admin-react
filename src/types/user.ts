@@ -4,21 +4,21 @@ export interface UserMetadata {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  profile: {
-    dateOfBirth?: Date;
-    gender?: string;
+  profile: {    
+    // gender?: string;
     profilePictureUrl?: string;
-    marketingBudget: {
-      adBudget: number;
-      costPerAcquisition: number;
-      dailySpendingLimit: number;
-      marketingChannels: string;
-      monthlyBudget: number;
-      preferredPlatforms: string;
-      notificationPreferences: string[];
-      roiTarget: number;
-      frequency: "daily" | "monthly" | "quarterly" | "yearly";
-    };
+    
+  };
+  marketingBudget: {
+    adBudget: number;
+    costPerAcquisition: number;
+    dailySpendingLimit: number;
+    marketingChannels: string;
+    monthlyBudget: number;
+    preferredPlatforms: string;
+    notificationPreferences: string[];
+    roiTarget: number;
+    frequency: "daily" | "monthly" | "quarterly" | "yearly";
   };
   address: {
     street: string;
