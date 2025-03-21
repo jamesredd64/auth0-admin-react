@@ -60,10 +60,39 @@
   }
 
   /* Custom calendar styles for FullCalendar */
-  .custom-calendar .fc-h-event {
+  .custom-calendar {
+    position: relative;
+    z-index: 1;
+  }
+
+  .custom-calendar .fc-highlight {
+    background: none !important;
+  }
+
+  .custom-calendar .fc-event {
+    cursor: pointer;
+  }
+
+  .custom-calendar .fc-daygrid-day {
+    cursor: pointer;
+  }
+
+  /* Prevent text selection on calendar */
+  .custom-calendar .fc {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  /* .custom-calendar .fc-h-event {
     background-color: transparent;
     border: none;
     color: black;
+  } */
+  /* Modal backdrop */
+  .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
   }
 
   .fc.fc-media-screen {
@@ -216,6 +245,57 @@
 
   .fc-addEventButton-button {
     @apply bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-800 dark:hover:bg-gray-800;
+  }
+
+  /* Dark mode calendar specific styles */
+  .dark .fc-day {
+    border: none !important;
+  }
+
+  .dark .fc-day-past {
+    @apply bg-gray-900 text-gray-500;
+  }
+
+  .dark .fc-day-today {
+    @apply bg-gray-800 text-gray-300;
+  }
+
+  .dark .fc-day-future {
+    @apply bg-gray-800 text-gray-300;
+  }
+
+  /* Remove borders in dark mode */
+  .dark .fc-scrollgrid,
+  .dark .fc-scrollgrid-section > *,
+  .dark .fc-scrollgrid-section table,
+  .dark .fc-scrollgrid-section td,
+  .dark .fc-scrollgrid-section th {
+    border: none !important;
+  }
+
+  /* Adjust the day number color in dark mode */
+  .dark .fc-daygrid-day-number {
+    @apply text-gray-400;
+  }
+
+  /* Style for past days in dark mode */
+  .dark .fc-day-past .fc-daygrid-day-number {
+    @apply text-gray-600;
+  }
+
+  /* Style for today's date in dark mode */
+  .dark .fc-day-today .fc-daygrid-day-number {
+    @apply text-brand-400;
+  }
+
+  /* Remove the today background highlight */
+  .dark .fc-day-today {
+    background: none !important;
+  }
+
+  /* Adjust the month/week view background in dark mode */
+  .dark .fc-view-harness {
+    @apply bg-gray-900;
   }
 }
 

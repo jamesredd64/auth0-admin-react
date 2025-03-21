@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { UserMetadata } from '../types/user';
+import { CalendarEventCategory } from '../types/calendar.types';
 import { API_CONFIG } from '../config/api.config';
 
 // Add this console log at the top of your file to verify the import
@@ -419,5 +420,69 @@ export const useMongoDbClient = () => {
     }
   }, [getAccessTokenSilently]);
 
-  return { fetchUserData, error, loading, updateUser, getUserById, checkAndInsertUser, saveUserData };
+  const getEvents = async (start: Date, end: Date, accessToken: string) => {
+    try {
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CALENDAR}?start=${start.toISOString()}&end=${end.toISOString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch events'
+      };
+    }
+  };
+
+  const createEvent = async (eventData: {
+    title: string;
+    start: Date;
+    end: Date;
+    calendar: CalendarEventCategory;
+    description?: string;
+    location?: string;
+    allDay?: boolean;
+  }, token: string) => {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CALENDAR}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(eventData)
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error creating event:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create event'
+      };
+    }
+  };
+
+  return {
+    fetchUserData,
+    error,
+    loading,
+    updateUser,
+    getUserById,
+    checkAndInsertUser,
+    saveUserData,
+    getEvents,
+    createEvent
+  };
 };
