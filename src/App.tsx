@@ -6,7 +6,7 @@ import AppLayout from "./layout/AppLayout";
 import { useEffect, useRef } from 'react';
 import NotFound from "./pages/OtherPage/NotFound";
 // import UserProfiles from "./pages/ProfilePage";
-import Calendar from "./pages/Calendar";
+import { Calendar } from "./pages/Calendar";
 import Home from "./pages/Dashboard/Home";
 import Logout from "./pages/test";
 import UserProfile from "./pages/TestPage";
